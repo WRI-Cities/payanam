@@ -1,0 +1,6 @@
+name,email,key,access
+Guest,guest@gtfs.com,guest,VIEW
+Merlin Mapper,mapper@gtfs.com,MapThatStop3,MAPPER
+Donny DataEntry,data@gtfs.com,InfoIncoming4,DATAENTRY
+Rita Reviewer,review@gtfs.com,CheckMySix7,REVIEW
+Aaron Admin,admin@gtfs.com,WhosTheBoss9,ADMIN

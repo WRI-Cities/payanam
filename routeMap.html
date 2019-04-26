@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<title>Payanam - Map a Route</title>
+
+<link href="lib/leaflet.css" orig="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css" rel="stylesheet">
+<link href="lib/jquery-ui.css" rel="stylesheet">
+<link href="lib/tabulator.min.css" rel="stylesheet">
+<link href="lib/bootstrap.v4.0.0.min.css" crossorigin="anonymous" alt="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" rel="stylesheet">
+<link rel="stylesheet" href="lib/easy-button.css" alt="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css">
+<link rel="stylesheet" href="lib/chosen/chosen.min.css">
+<link href='lib/leaflet.fullscreen.css' alt='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css' rel='stylesheet' />
+
+<link href="js/style.css" rel="stylesheet">
+
+<!-- Put the CSSs first and JSs next -->
+
+<script src="lib/jquery-3.3.1.min.js" type="text/javascript"></script>
+<script src="lib/jquery-ui.min.js" type="text/javascript"></script>
+<script src="lib/leaflet.js"></script>
+<script src="lib/easy-button.js" alt="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.js"></script>
+<script src="lib/tabulator.min.js" type="text/javascript"></script>
+<script src="lib/popper.v1.12.9.min.js" crossorigin="anonymous" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" alt="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="lib/bootstrap.v4.0.0.min.js" crossorigin="anonymous" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" alt="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+<script src="lib/papaparse.min.js" type="text/javascript"></script>
+<script src="lib/leaflet-ant-path.js"></script>
+<script src="lib/chosen/chosen.jquery.min.js" type="text/javascript"></script>
+<script src='lib/Leaflet.fullscreen.min.js' alt='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js'></script>
+<script src="lib/Leaflet.Control.Custom.js"></script>
+<script src="lib/leaflet-providers.js"></script>
+<style>
+
+#map {
+height: 85vh;
+width: 100%;
+}
+
+/* MAP */
+
+#mapContainer {
+	position: relative;
+}
+
+#panel {
+	position: absolute;
+	bottom:25px;
+	left:10px;
+	/*right: 50px;*/
+	z-index: 1000;
+	padding: 10px;
+	border-radius: 5px;
+	background-color: rgba(255,255,255,0.7);
+	box-shadow:0px 0px 5px black; /*looks 3D! no need of a border*/
+
+	font-size: 0.7em;
+}
+
+#crosshair {
+	position: absolute;
+	z-index: 1001;
+	top: 50%;
+	left: calc(50% + 1px);
+	pointer-events:none; /*from https://stackoverflow.com/a/7700122/4355695 */
+	/*bottom:25px;
+	left:10px;*/
+	/*right: 50px;*/
+}
+#crosshair > img {
+	height: 30px;
+	/*weight: 30px;*/
+	margin-top: -26px;
+	margin-left: -15px;
+}
+
+input[type=checkbox] {
+ width: 15px; height: 15px;
+ /*-webkit-border-radius: 22px; -moz-border-radius: 22px; border-radius: 22px;*/
+  border: 1px solid #000;
+  vertical-align: middle; 
+}
+
+textarea {
+	font-family: 'Courier New', Courier, monospace;
+	font-size: 80%;
+}
+
+.confidence-style {
+    font-size: 12px;
+}
+
+.divOnMap2 {
+	padding: 2px;
+	background: rgba(255, 255, 255, 0.644);
+	font-size: 12px;
+}
+</style>
+
+</head>
+<body>
+<div id="topMenu"></div>
+
+<div class="container-fluid">
+<div class="row">
+<div class="col-md-6">
+
+<h3>Route Mapper</h3>
+
+<p><small>
+<select id="routeSelect"></select>
+<span id="routeStatus"></span> </small>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="badge badge-secondary" data-toggle="collapse" href="#collapseRoute" role="button" aria-expanded="false" aria-controls="collapseRoute">Show/Hide Route Table</a>
+</p>
+
+<div class="collapse show" id="collapseRoute">
+
+<div id="routeTable"></div>
+<div id="autoSuggest"></div>
+<br>
+<small>
+    <input id="addStop" size="10"><button onclick="addStop()" type="button" title="Add a stop to the route">Add a stop</button>
+    &nbsp;&nbsp;&nbsp;&nbsp;
+	<button onclick="adoptSuggested()">Adopt first suggestions<br> for all unmapped stops</button>
+	&nbsp;&nbsp;
+	<button onclick="reSequence()">Re-Number<br>Sequence</button>
+	&nbsp;&nbsp;
+	<button onclick="routeTable.clearFilter(true)">Clear All<br>Filters</button>
+	
+</small>
+</div><!-- route block collapse-->
+
+<hr>
+
+<br>
+<h5>DataBank table <small>(dull yellow dots)  <a class="badge badge-secondary" data-toggle="collapse" href="#collapseDatabank" role="button" aria-expanded="false" aria-controls="collapseRoute">show/hide</a></small></h5>
+<p><small> Load: 
+<a href="javascript:;" onclick="loadDatabank('mapped')" class="databank" id="mapped">Loading..</a> | 
+<a href="javascript:;" onclick="loadDatabank()" class="databank" id="databank">Loading..</a> | 
+<a href="javascript:;" onclick="loadDatabank('automapped')" class="databank" id="automapped">Loading..</a> | 
+<a href="javascript:;" onclick="loadDatabank('postoffice')" class="databank" id="postoffice">Loading..</a> | 
+<a href="javascript:;" onclick="loadDatabank('hamlets')" class="databank" id="hamlets">Loading..</a>
+</small></p>
+
+<div class="collapse show" id="collapseDatabank">
+    <div id="databankTable"></div>
+    <small><p class="littleTopSpace">
+        On map: show top <input id="databankLimit" size="5" value="15000"> results. (wait 2 seconds after sorting/filtering to render on map)
+    </p></small>
+</div>
+
+<!-- REMOVING FuzzMapping features for now
+<p>
+<small>
+Search databank:
+<input id="searchName" placeholder="stop name" size="15"> 
+<br>
+<label><input type="checkbox" name="fuzzyWuzzyCheck" value="fuzzyWuzzyCheck" id="fuzzyWuzzyCheck" checked>FuzzyWuzzy</label>&nbsp;&nbsp;
+<label><input type="checkbox" name="jellyFishCheck" value="jellyFishCheck" id="jellyFishCheck" checked>JellyFish</label>&nbsp;&nbsp; <button onclick="loadRight()" type="button">Click to fuzzy search</button>
+<br><i>this will run fuzzy search algorithms on the databank and return scored results. May take time so wait while the table loads. You can also just type into the stop name filter </i>
+</small></p>
+-->
+
+<!-- maybe later
+<p><small>
+Upload: <small></small><input type="file" id="dataBank" name="dataBank" accept=".csv" class="btn btn-sm btn-outline-secondary">
+</small></p>
+-->
+
+</div>
+<div class="col-md-6">
+
+<small>
+<span id="numMapped">x stops mapped</span> | see map-center on: 
+<big><a href="javascript:{}" onclick="openExternalMap('g')" class="badge badge-primary">Gmaps</a> &nbsp; 
+<a href="javascript:{}" onclick="openExternalMap('m')" class="badge badge-success">Mapillary</a></big>
+
+</small>
+<div id="mapContainer">
+<div id="map"></div>
+<div id="panel">
+<span id="location"></span><br>
+        Confidence:<br>
+<select id="confidenceSelect" class="confidence-style"></select>
+</div>
+<div id="crosshair"><img src="lib/focus-black.svg"></div>
+</div>
+
+
+<p class="littleTopSpace"><small>
+</small></p>
+
+
+
+<br>
+<div class="row">
+<div class="col-md-6">
+
+    <p><button class="btn btn-success" onclick="saveRoute()">Save changes to Route info</button></p>
+    <p><small><span id="routeSaveStatus">&nbsp;</span></small></p>
+    
+	<hr>
+	<h5>Extra</h5>
+
+	<small><button onclick="routeTable.download('csv', 'routeMap.csv')">download Route table as csv</button></small>
+	<br><br>
+    
+        
+    
+</div><div class="col-md-6">
+    
+    <p><button class="btn btn-sm btn-warning" onclick="routeSuggest()">Load Automatic Suggestions<br>for this route</button> </p>
+    <p><small><span id="routeSuggestStatus"></span></small></p>
+	<p class="alert alert-warning"><small>Notes: Save any changes done first!</small></p>
+	<hr>
+	<div class="alert alert-secondary">
+	Lock this Route? <a class="badge badge-secondary" data-toggle="collapse" href="#collapseLock" role="button" aria-expanded="false" aria-controls="collapseRoute">show/hide</a><br>
+        <div class="collapse" id="collapseLock">
+        <br>
+        <p><button class="btn btn-sm btn-danger" onclick="lockRoute()">Lock this Route</button> as completed.</p>
+        <p id="routeLockStatus"></p>
+        <p><small>What this means: The route will be moved to "locked-routes" folder on server and will no longer be available for editing. Its mapping will be assumed to be "final" and will be used as benchmark in bulk mapping exercises.</small></p>
+		</div>
+	</div>
+	<hr>
+	Upload GPX file: <input type="file" id="gpxFile" name="gpxFile" accept=".gpx" class="btn btn-sm btn-outline-secondary">
+
+	</div>
+</div><!-- end of row > subcolumns in right side-->
+<h5>Additional Route info:</h5>
+<div id="additionalInfo"></div>
+</div><!-- end of right side column -->
+
+
+
+</div><!-- end of row -->
+
+
+
+<br>Mapillary full view: <a class="badge badge-secondary" data-toggle="collapse" href="#collapseMapillary" role="button" aria-expanded="false" aria-controls="collapseMapillary">Show/Hide</a></br>
+<div class="collapse hide" id="collapseMapillary">
+<iframe id="mapillary" height="400" style="width:100%;"></iframe>
+</div>
+<br><br>
+<div id="accordion">
+<h4>Instructions</h4>
+<div>
+	To Do.<br>
+<!--
+<ol>
+	<li>Choose a route from top-left drop-down</li>
+	<li>Have to map each stop.</li>
+	<li>As you map them, stops will appear on the map. Green are for onward direction (0), and Purple are for return direction (1).</li>
+	<li>To check the order of stops on map, click the route icon on left side of map. That will toggle on the default route lines layer. (toggle it on/off once if you've changed a stop, deleted a stop etc so it can be redrawn from new layout)</li>
+	<li>Below the map, there's a big yellow button, "Load Sugge". Press it to load suggested locations for each stop. You will then see the "suggested" column get populated on the route table.</li>
+	<li></li>
+	<br>
+	<li>Bottom table is for databank. Load it by clicking "Load Databank" button. Databank points will load as light brown dots on the map.</li>
+	<li>Use the filters to drill down to the right options.</li>
+	<li>The databank CSV is in the databank/ folder of this app.</li>
+	<li>You can change which databank csv is used, from config.json .</li>
+	<li>In top table, you can edit various columns, delete and add entries. To save changes back to the csv, click on the big green "save changes.." button below the map.</li>
+	<li>Click "map all exact matches" if you want to run a bulk direct names matching function at backend, which reads the default databank as set in the config.json file.</li>
+	<li>You can also do a "fuzzy" search for a name on the databank. This will return a scored list of names that sound closest to the search term.</li>
+</ol>
+-->
+</div>
+</div><!-- Accordion over -->
+
+<br>
+
+<p id="keyStatus"></p>
+
+<small>
+Credits:<br>
+<p>On map focus icon made by <a href="https://www.flaticon.com/authors/xnimrodx" title="xnimrodx">xnimrodx</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> is licensed by <a href="https://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a><br>
+Zoom-to-fit icon made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> is licensed by <a href="https://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a><br>
+Route toggle icon by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> is licensed by <a href="https://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></p>
+</small>
+
+</div>
+<!-- END HTML. BEGIN SCRIPT-->
+<script src="js/common.js"></script>
+<script src="js/routeMap.js"></script>
+</body>
+</html>

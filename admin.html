@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<title>Payanam - Admin</title>
+
+<link href="lib/bootstrap.v4.0.0.min.css" crossorigin="anonymous" alt="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" rel="stylesheet">
+<link href="lib/jquery-ui.css" rel="stylesheet">
+<link href="lib/tabulator.min.css" rel="stylesheet">
+<link rel="stylesheet" href="lib/chosen/chosen.min.css">
+
+<!-- Put the CSSs first and JSs next -->
+
+<script src="lib/jquery-3.3.1.min.js" type="text/javascript"></script>
+<script src="lib/jquery-ui.min.js" type="text/javascript"></script>
+<script src="lib/tabulator.min.js" type="text/javascript"></script>
+<script src="lib/papaparse.min.js" type="text/javascript"></script>
+<script src="lib/leaflet.js"></script>
+<script src="lib/chosen/chosen.jquery.min.js" type="text/javascript"></script>
+
+
+<style>
+body {
+    color: black;    
+}
+
+.tabulator {
+    color: black !important;
+    size: 0.9em;
+}
+
+</style>
+
+</head>
+<body>
+<div id="topMenu"></div>
+<div class="container-fluid">
+    <br>
+<h2>Payanam - Admin</h2>
+<br>
+<h3>Bulk Auto-suggest / Auto-Map</h3>
+<p><button onclick="bulk()" class="btn btn-warning">Bulk auto-suggest for all unmapped stops in all routes</button> <br>Options:<br>
+<label>1. <input type="checkbox" id="mapFirst"> Also take the topmost suggestion and map it.</label><br>
+<label>2. <input type="checkbox" id="suggestManual"> Compute suggestions for already manually mapped stops.</label><br>
+<label>3. <input type="checkbox" id="mapAgain"> Re-do (suggestion and/or mapping) for already auto-mapped stops.</label><br>
+<label>4. <input type="checkbox" id="fuzzy"> Do Fuzzy search instead of direct matching.</label><br>
+<label>5. <input type="checkbox" id="jumpers"> Perform sanity check and catch stops jumping too far from rest of route.</label> | <label><input type="checkbox" id="dryRun" checked> Dry Run.</label><br>
+<div id="bulkStatus"></div>
+</p>
+<p><b>Important:</b>
+<ul>
+<li>This will <b>not affect</b> any manually mapped stops (so your work is safe no worries); it only affects stops that are blank and/or auto-mapped.</li>
+<li>This will do the same thing that the yellow "Load Automatic Suggestions.." button on routeMapper page does.</li>
+<li>.. for every route in routes/ folder (ie, routes that are in-progress and haven't been locked yet)</li>
+<li>In case the checkbox is ticked, it will also do what the "Adopt first suggestions.." button on routeMapper page does.</li>
+<li>In case anybody has loaded up a route before this operation, they will see no changes at the frontend, because this operation is happening at backend only.</li>
+<li>When they make their changes and save their work, then the data at their end will go in and over-write whatever this operation did.</li>
+<li>So it's advisable to ask everyone to back off from editing routes till this is over.</li>
+<li>This can take from 5 mins to a couple of hours depending on the extent of data; and during the server will not be available for other operations. So set this to run at late night or over lunch or something.</li>
+<li>Also, the suggestions building runs on the reports building process, whose routes output you see in the routesOverview page. Make sure to run that first before running this, to grab the latest mapped data.</li>
+<li>If auto-mapping, confidence level for that stop will be set to 0, to indicate it has been auto-mapped.</li>
+<li>If Fuzzy search is checked, then Jellyfish's jaro_winkler algorithm will be used to calculate scoring for the mapped stops, using the to-map stop name. The ones with highest score (closest match) will be listed as suggested matches. Caution: this takes more time, and can be inaccurate. Use only in times of desperation.</li>
+</ul>
+</p>
+
+<hr>
+
+<h3>Remove Auto-mapping</h3>
+<p>
+<label>1. <input type="checkbox" id="removeReally"> Really do it.</label><br>
+<label>2. <input type="checkbox" id="removeSuggestions"> Remove suggestions too.</label> <small>(happens only if first is checked)</small><br>
+<button class="btn btn-danger" onclick="removeAutoMapping()">Bulk Remove Auto-mapping</button>
+</p>
+<div id="removeAutoStatus"></div>
+
+<br>
+<hr>
+<h3>Unlock Routes</h3>
+Once locked, Payanam treats the route as read-only and they cannot be edited further (though they are readable by all the reports generation scripts all the same). This section is for un-doing that locking and making the route editable again.
+<br>    <select id="routeSelect"></select> &nbsp; <button onclick="unLock()" class="btn btn-warning">Unlock this Route</button> &nbsp; <small id="unlockStatus">This will move the route back to routes/ folder where it will be available for editing again.</small>
+<br><br> Want to lock a route? Go on RouteMapper page, see below the map.
+<br><br>
+<hr>
+
+<p id="keyStatus"></p>
+Note: This page's buttons only work for API keys that have admin access. Others - go ahead and try.
+</div>
+
+<!-- END HTML. BEGIN SCRIPT-->
+<script src="js/common.js"></script>
+<script>
+function bulk() {
+    var mapFirstOption = document.querySelector('#mapFirst').checked;
+    console.log(mapFirstOption);
+
+    var mapFirst = 'n';
+    if(mapFirstOption) mapFirst = 'y';
+
+    var suggestManual = 'n';
+    if(document.querySelector('#suggestManual').checked) suggestManual = 'y';
+
+    var mapAgain = 'n';
+    if(document.querySelector('#mapAgain').checked) mapAgain = 'y';
+
+    var fuzzy = 'n';
+    if(document.querySelector('#fuzzy').checked) fuzzy = 'y';
+
+    var jumpers = 'n';
+    if(document.querySelector('#jumpers').checked) jumpers = 'y';
+
+    var dryRun = 'n';
+    if(document.querySelector('#dryRun').checked) dryRun = 'y';
+
+    console.log('Options:');
+    console.log('mapFirst:',mapFirst);
+    console.log('suggestManual:',suggestManual);
+    console.log('mapAgain:',mapAgain);
+    console.log('fuzzy:',fuzzy);
+    console.log('jumpers:',jumpers);
+    console.log('dryRun:',dryRun);
+
+    if(!confirm(`Are you sure you want to do this?\nAnd FYI you have set the auto-mapping option to: ${mapFirst}.`) ) return;
+    
+    // let pw = prompt('Please enter Admin level password:');
+    $('#bulkStatus').html(`<div class="alert alert-warning">Processing.. This will probably go into error in some mins on the front page, but the function will be on at backend. See "tail -f payanam/logs/log.txt" on ssh.</div>`);
+    
+    $.get( `${APIpath}bulkSuggest?mapFirst=${mapFirst}&suggestManual=${suggestManual}&mapAgain=${mapAgain}&fuzzy=${fuzzy}&jumpers=${jumpers}&dryRun=${dryRun}&key=${globalApiKey}`, function( response ) {
+        $('#bulkStatus').html(`<p class="alert alert-success">${response}</p>`);
+    }).fail(function(err) {
+		$('#bulkStatus').html(`<p class="alert alert-danger">${err.responseText}</p>`);
+	});
+}
+
+function removeAutoMapping(){
+    var removeReally = 'n';
+    if(document.querySelector('#removeReally').checked) removeReally = 'y';
+
+    var removeSuggestions = 'n';
+    if(document.querySelector('#removeSuggestions').checked) removeSuggestions = 'y';
+
+    console.log("removeAutoMapping():");
+    console.log("removeReally",removeReally);
+    console.log("removeSuggestions",removeSuggestions);
+
+    if(removeReally == 'y') {
+        if(!confirm(`Are you sure you remove all AutoMapping for all routes in routes/ folder?`) ) return;
+    }
+    $('#removeAutoStatus').html('Processing..');
+
+    $.get( `${APIpath}removeAutoMappingAPI?really=${removeReally}&deSuggest=${removeSuggestions}&key=${globalApiKey}`, function( response ) {
+        $('#removeAutoStatus').html(`<p class="alert alert-success">${response}</p>`);
+    }).fail(function(err) {
+		$('#removeAutoStatus').html(`<p class="alert alert-danger">${err.responseText}</p>`);
+	});
+}
+
+function loadRoutesList() {
+	$.get( `${APIpath}loadJsonsList?which=locked`, function( data ) {
+		//console.log(data);
+		$('#routeSelect').html(data);
+		$('#routeSelect').trigger('chosen:updated'); 
+		$('#routeSelect').chosen({disable_search_threshold: 1, search_contains:true, width:200, height: 400, placeholder_text_single:'Pick a route'});
+	});
+}
+
+function unLock() {
+    let filename = $('#routeSelect').val();
+    $('#unlockStatus').html(`Unlocking ${filename}..`);
+    console.log('Unlocking ' + filename);
+
+    $.get( `${APIpath}unLock?route=${filename}&key=${globalApiKey}`, function( data ) {
+        console.log(data);
+        $('#unlockStatus').html(`${data}`);
+        loadRoutesList();
+
+    }).fail(function(err) {
+		$('#unlockStatus').html(`<span class="alert alert-danger">${err.responseText}</span>`);
+	});
+
+}
+// ########################
+// RUN ON PAGE LOAD
+$(document).ready(function() {
+    //checkCookie();
+    loadRoutesList();
+});
+
+
+</script>
+</body>
+</html>

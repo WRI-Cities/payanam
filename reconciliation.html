@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<title>Payanam - Stops Reconciliation</title>
+
+<link href="lib/leaflet.css" orig="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css" rel="stylesheet">
+<link href="lib/jquery-ui.css" rel="stylesheet">
+<link href="lib/tabulator.min.css" rel="stylesheet">
+<link href="lib/bootstrap.v4.0.0.min.css" crossorigin="anonymous" alt="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" rel="stylesheet">
+<link rel="stylesheet" href="lib/easy-button.css" alt="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css">
+<link rel="stylesheet" href="lib/chosen/chosen.min.css">
+<link href='lib/leaflet.fullscreen.css' alt='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css' rel='stylesheet' />
+
+<link href="js/style.css" rel="stylesheet">
+
+<!-- Put the CSSs first and JSs next -->
+
+<script src="lib/jquery-3.3.1.min.js" type="text/javascript"></script>
+<script src="lib/jquery-ui.min.js" type="text/javascript"></script>
+<script src="lib/leaflet.js"></script>
+<script src="lib/easy-button.js" alt="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.js"></script>
+<script src="lib/tabulator.min.js" type="text/javascript"></script>
+<script src="lib/popper.v1.12.9.min.js" crossorigin="anonymous" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" alt="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="lib/bootstrap.v4.0.0.min.js" crossorigin="anonymous" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" alt="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+<script src="lib/papaparse.min.js" type="text/javascript"></script>
+<script src="lib/leaflet-ant-path.js"></script>
+<script src="lib/chosen/chosen.jquery.min.js" type="text/javascript"></script>
+<script src='lib/Leaflet.fullscreen.min.js' alt='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js'></script>
+<script src="lib/leaflet-lasso.min.js"></script>
+<script src="lib/Leaflet.Control.Custom.js"></script>
+<script src="lib/leaflet-providers.js"></script>
+<style>
+
+#map {
+height: 550px;
+width: 100%;
+min-width: 500px;
+}
+
+/* MAP */
+
+#mapContainer {
+	position: relative;
+}
+
+#panel {
+	position: absolute;
+	bottom:25px;
+	left:10px;
+	/*right: 50px;*/
+	z-index: 1000;
+	padding: 10px;
+	border-radius: 5px;
+	background-color: rgba(255,255,255,0.7);
+	box-shadow:0px 0px 5px black; /*looks 3D! no need of a border*/
+
+	font-size: 0.7em;
+}
+
+#crosshair {
+	position: absolute;
+	z-index: 1001;
+	top: 50%;
+	left: calc(50% + 1px);
+	pointer-events:none; /*from https://stackoverflow.com/a/7700122/4355695 */
+	/*bottom:25px;
+	left:10px;*/
+	/*right: 50px;*/
+}
+#crosshair > img {
+	height: 30px;
+	/*weight: 30px;*/
+	margin-top: -26px;
+	margin-left: -15px;
+}
+
+input[type=checkbox] {
+ width: 15px; height: 15px;
+ /*-webkit-border-radius: 22px; -moz-border-radius: 22px; border-radius: 22px;*/
+  border: 1px solid #000;
+  vertical-align: middle; 
+}
+
+textarea {
+	font-family: 'Courier New', Courier, monospace;
+	font-size: 80%;
+}
+
+.confidence-style {
+    font-size: 12px;
+}
+
+.divOnMap1 {
+	padding: 2px;
+	background: rgba(255, 255, 255, 0.644);
+	font-size: 14px;
+}
+
+.divOnMap2 {
+	padding: 2px;
+	background: rgba(255, 255, 255, 0.644);
+	font-size: 12px;
+}
+
+</style>
+
+</head>
+<body>
+<div id="topMenu"></div>
+
+<div class="container-fluid">
+
+
+<div class="row">
+<div class="col-md-6"><!-- left side begin -->
+
+<p><b>Unique Stop Names</b> &nbsp;&nbsp;&nbsp;
+<a class="badge badge-secondary" data-toggle="collapse" href="#collapse_uniqueStopsTable" role="button" aria-expanded="false" aria-controls="collapse_uniqueStopsTable">Show/Hide Table</a>
+<span class="alert alert-warning">Reconciling: <select id="chooseMode">
+	<option value="mapped">mapped</option>
+	<option value="unmapped">unmapped</option>
+	<option value="all">all</option>
+</select> stops.</span>
+</p>
+<div class="collapse show" id="collapse_uniqueStopsTable">
+<div id="uniqueStopsTable"></div>
+<p><small>
+<span id="uniqueSelectStatus">0</span> unique stop names chosen. | 
+<button onclick="clearSelections()">Clear selections above</button> | 
+<button onclick="uniqueStopsTable.clearFilter(true)">Clear filters above</button>
+</small></p>
+</div>
+
+
+
+<p>
+<b>Individual stops</b> &nbsp;&nbsp;&nbsp; 
+<a class="badge badge-secondary" data-toggle="collapse" href="#collapse_stopsTable" role="button" aria-expanded="false" aria-controls="collapse_stopsTable">Show/Hide Table</a>
+</p>
+<div class="collapse show" id="collapse_stopsTable">
+<p><small>
+<span class="stopSelectStatus">0</span> stops chosen. | 
+<button onclick="stopsSelectAll()">Select All</button> | 
+<button onclick="clearSelections('stops')">De-select All</button> | 
+<button onclick="stopsTable.clearFilter(true)">Clear All Filters</button>
+	| <button onclick="mapStops()">Map Stops</button>
+</small></p>
+<div id="stopsTable"></div>
+
+<br>
+<p>
+Note: The data in the above two tables comes from report CSVs that are auto-generated every 10 mins. So, after you've done some changes, <i>don't mess with those stops</i> again; and force-Refresh (Ctrl+F5) around 10 mins later to see the latest data. <br><br>The changes themselves are happening in the route json's as soon as you see the green confirmation below the big yellow button. Just it'll take 10+ mins to reflect in the top left tables, and you'll have to reload the page to see them.
+</p>
+</div><!-- stops table collapse block over-->
+
+
+</div><!-- left side over-->
+<div class="col-md-6"><!-- right side begin -->
+	<div class="row"> <!-- making another columns set just for putting the RESET button on far right-->
+		<div class="col-md-9">
+			<small>open in: 
+				<big><a href="javascript:{}" onclick="openExternalMap('g')" class="badge badge-primary">Gmaps</a> 
+				<a href="javascript:{}" onclick="openExternalMap('m')" class="badge badge-success">Mapillary</a></big>
+			</small>
+		</div>
+		<div class="col-md-3">
+			<button class="btn btn-sm btn-danger" onclick="resetEverything()">Reset Everything!</button>
+		</div>
+	</div>
+
+				
+    <div id="mapContainer">
+    <div id="map"></div>
+    <div id="crosshair"><img src="lib/focus-black.svg"></div>
+	</div>
+	<!-- moved to leaflet custom control, see js/mappedStops.js
+	<p>Preview route line: <select id="routeLineSelect"><option value="">Pick a route</option></select></p>
+	-->
+	<br><b>Stops Reconcillation </b> &nbsp;&nbsp;&nbsp;
+	<a class="badge badge-secondary" data-toggle="collapse" href="#collapse_recon" role="button" aria-expanded="false" aria-controls="collapse_recon">Show/Hide</a>
+	<br>
+	<div id="collapse_recon" class="collapse show">
+	<div class="row">
+
+	<div class="col-md-5">
+		Standardise <span class="stopSelectStatus">0</span> stops to:<br>
+		<p>Name: &nbsp;&nbsp; <small><a href="javascript:;" onclick="pickFirst('name')">pick first</a></small><br>
+		<input id="recon_stop_name" class="form-control"></p>
+		Lat,Lon: &nbsp;&nbsp; <small><i>click on map</i> or <a href="javascript:;" onclick="pickFirst()">pick first</a></small><br>
+		<p><input id="recon_loc" class="form-control"> </p>
+		Description: <small><i>optional</i></small><br>
+		<input id="recon_stop_desc" class="form-control">
+		
+	</div>
+	<div class="col-md-7">
+		<textarea id="reconcillationPreview" style="width:100%;height:200px;" disabled></textarea>
+		<p><button onclick="reconcileSubmit()" class="btn btn-warning"  data-toggle="tooltip" data-placement="bottom" title="">Reconcile Stops</button></p>
+	</div>
+	</div>
+
+	<small><div id="reconcileStatus"><p class="alert alert-warning">Note: This will go into each of the mentioned routes, and overwrite that particular stop with the standardized values. Changes made will take about 10-15 minues to reflect here through the reporting scripts, so please don't work on the same stop names again right afterwards.</p></div></small>
+	</div>
+</div><!-- right side over-->
+</div><!-- row over-->
+
+
+<br>
+<p>Mapillary full view: 
+<a class="badge badge-secondary" data-toggle="collapse" href="#collapseMapillary" role="button" aria-expanded="false" aria-controls="collapseMapillary">Show/Hide</a>
+</p>
+<div class="collapse hide" id="collapseMapillary">
+<iframe id="mapillary" height="400" style="width:100%;"></iframe>
+</div>
+
+
+<p id="keyStatus"></p>
+</div> <!-- End of container-fluid-->
+
+
+<!-- END HTML. BEGIN SCRIPT-->
+<script src="js/common.js"></script>
+<script src="js/reconciliation.js"></script>
+
+</body>
+</html>

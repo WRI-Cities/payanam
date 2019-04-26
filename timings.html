@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<title>Payanam - Timings</title>
+
+<link href="lib/jquery-ui.min.css" rel="stylesheet">
+
+<link href="lib/bootstrap.v4.0.0.min.css" crossorigin="anonymous" alt="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" rel="stylesheet">
+
+<link rel="stylesheet" href="lib/chosen/chosen.min.css">
+<link rel="stylesheet" href="js/style.css">
+
+<!-- Put the CSSs first and JSs next -->
+
+<script src="lib/jquery-3.3.1.min.js" type="text/javascript"></script>
+<script src="lib/jquery-ui.min.js" type="text/javascript"></script>
+
+<script src="lib/popper.v1.12.9.min.js" crossorigin="anonymous" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" alt="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="lib/bootstrap.v4.0.0.min.js" crossorigin="anonymous" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" alt="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+<script src="lib/papaparse.min.js" type="text/javascript"></script>
+<script src="lib/chosen/chosen.jquery.min.js" type="text/javascript"></script>
+<script src="lib/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="lib/leaflet.js"></script>
+<style>
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+}
+textarea {
+	font-family: 'Courier New', Courier, monospace;
+	/*font-size: 100%;*/
+    width: 100%;
+}
+.smallInput {
+    width: 30px;
+}
+.hhmm {
+    width: 80px;
+}
+/*
+.return {
+    background: rgb(10, 85, 117);
+    color: white;
+}
+
+.onward {
+    background:rgba(25, 188, 156,0.3);
+}
+*/
+
+.return {
+    background:rgba(0, 0, 0,0.05);
+}
+.ui-tabs {
+    padding: 0;
+    width: 100%;
+}
+
+.row .col-md-4, .row .col-md-3 {
+    padding: 20px;
+}
+</style>
+
+</head>
+<body>
+
+<div id="topMenu"></div>
+
+<div class="container-fluid">
+<h3>Timings</h3>
+<p>
+Choose a route: <select id="jsonSelect"></select> &nbsp;&nbsp;
+<span class="routeMeta"></span>
+</p>
+</div>
+
+&nbsp;&nbsp; Pick a way in which timings are stored:<br>
+<!-- Tabs Menu -->
+<div id="tabs">
+    <ul>
+    <li><a href="#tab1">1. Trip Start Times</a></li>
+    <li><a href="#tab2">2. Frequency</a></li>
+    </ul>
+
+    <!-- 1 ############################-->
+    <div id="tab1">
+    <div class="row"><div class="col-md-4 onward">
+        <h5>Onward Journey: <span class="fromTo"></span></h5>
+        <p>Trip start times:<br>
+        <textarea class="trip_times" rows=5></textarea></p>
+    </div><div class="col-md-4 return">
+        <h5>Return Journey: <span class="fromTo"></span></h5>
+        <p>Trip start times:<br>
+        <textarea class="trip_times" rows=5></textarea><br>
+        <small><a href="javascript:;" onclick="trip_times_copy()">copy from onward</a></small>
+    </p>
+    </div><div class="col-md-4">
+    <p class="alert alert-primary"><small>Put timings in hh:mm 24h format, separated by line-breaks, spaces, commas, tabs or '|'.</small></p>
+    <p><small>
+        <button onclick="resetTimings()">Reset to blanks</button> &nbsp;
+        <button onclick="defaultTimings()">Load Defaults</button>
+    </small></p>
+    <p><span id="legacy_warning"></span></p>
+    </div></div>
+
+    </div><!-- one tab over -->
+    
+    <!-- 2 ############################-->
+    <div id="tab2"><!-- Frequency -->
+    <div class="row"><div class="col-md-4 onward">
+        <h5>Onward Journey: <span class="fromTo"></span></h5>
+        <p>First Trip: <input class="first_trip_start hhmm" placeholder="hh:mm"></p>
+        <p>Last Trip: <input class="last_trip_start hhmm" placeholder="hh:mm"></p>
+        <p>Frequency (headway):<br>
+            Every <input class="hr smallInput" placeholder="0">hrs,
+            <input class="min smallInput" placeholder="0">min, 
+            <input class="sec smallInput" placeholder="00">secs</p>
+
+    </div><div class="col-md-4 return">
+        <h5>Return Journey: <span class="fromTo"></span></h5>
+        <p>First Trip: <input class="first_trip_start hhmm" placeholder="hh:mm"></p>
+        <p>Last Trip: <input class="last_trip_start hhmm" placeholder="hh:mm"></p>
+        <p>Frequency (headway):<br>
+            Every <input class="hr smallInput" placeholder="0">hrs,
+            <input class="min smallInput" placeholder="0">min, 
+            <input class="sec smallInput" placeholder="00">secs</p>
+        <p><small><a href="javascript:;" onclick="frequency_copy()">Copy from Onward</a></small></p>
+    
+    </div><div class="col-md-4">
+        <p class="alert alert-warning"><small>Warning: If trip start times in previous tabs are populated for a direction, then the corresponding values here will be saved in the routes data, but will be ignored in the GTFS calculation. Blank out trip start times to make these values active.</small></p>
+        <p><small>
+            <button onclick="resetFrequency()">Reset to blanks</button> &nbsp;
+            <button onclick="defaultFrequency()">Load Defaults</button>
+        </small></p>
+    </div></div>
+    
+    </div><!-- one tab over -->
+
+
+</div><!-- Tabs Over -->
+
+<div class="container-fluid">
+
+<div class="row bg-light">
+<div class="col-md-2">
+    <br>
+<h5>Route Duration: </h5>
+</div><div class="col-md-3 onward">
+    <p>Onward Journey Duration:<br>
+    <input class="duration hhmm" placeholder="hh:mm"></p>
+
+</div><div class="col-md-3 return">
+    <p>Return Journey Duration:<br>
+    <input class="duration hhmm" placeholder="hh:mm">
+    &nbsp;&nbsp; 
+    <small><a href="javascript:;" onclick="copyDuration()">copy from onward</a></small></p>
+</div><div class="col-md-4">
+    <small><a href="javascript:$('.duration').val('01:00');">Assume 1 hr</a> &nbsp; 
+        | &nbsp; <a href="javascript:$('.duration').val('');" onclick="">clear durations</a><br>
+    Note: If duration is left blank, it will be calculated in GTFS program by taking distance covered from lat-longs and assuming a default speed of <span id="defaultSpeed"></span> km/hr.</small>
+</div></div>
+
+<br>
+<p align="center">
+<button class="btn btn-success" onclick="saveTimings()">Save Timings <span id="saveButtonRoute"></span></button><br>
+<div id="saveStatus" align="center"></div>
+</p>
+
+<!-- 
+<p><textarea id="dump"></textarea></p>
+-->
+
+</div><!-- end of container-fluid (full width)  -->
+
+<br><br><br>
+<div id="keyStatus"></div>
+<script src="js/common.js"></script>
+<script src="js/timings.js"></script>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<title>Payanam - Routes Info Collector</title>
+
+<link href="lib/jquery-ui.min.css" rel="stylesheet">
+<link href="lib/bootstrap.v4.0.0.min.css" crossorigin="anonymous" alt="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" rel="stylesheet">
+<link rel="stylesheet" href="lib/chosen/chosen.min.css">
+
+<!-- Put the CSSs first and JSs next -->
+<script src="lib/jquery-3.3.1.min.js" type="text/javascript"></script>
+<script src="lib/jquery-ui.min.js" type="text/javascript"></script>
+<script src="lib/popper.v1.12.9.min.js" crossorigin="anonymous" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" alt="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    
+<script src="lib/bootstrap.v4.0.0.min.js" crossorigin="anonymous" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" alt="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+<script src="lib/papaparse.min.js" type="text/javascript"></script>
+<script src="lib/chosen/chosen.jquery.min.js" type="text/javascript"></script>
+<script src="lib/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="lib/leaflet.js"></script>
+<style>
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+}
+textarea {
+	font-family: 'Courier New', Courier, monospace;
+	/*font-size: 100%;*/
+    width: 100%;
+}
+
+/* ACE Editor - numbered lines */
+.stopsList {
+    height: 60vh;
+    font-size: 1.2em;
+    font-weight: 400;
+    width: 95%;
+}
+.ace_gutter-cell {
+    color: rgb(155, 155, 155);
+}
+
+
+.timeList {
+    height: 40vh;
+    width: 90%;
+    font-weight: 400;
+}
+
+.timeList-smaller {
+    height: 20vh;
+}
+
+input {
+    width: 90%;
+}
+
+.freqList {
+    height:30vh;
+}
+
+.return {
+    background: rgb(10, 85, 117);
+}
+
+.onward {
+    background:rgba(25, 188, 156,0.3);
+}
+
+.extra {
+    height: 21vh;
+    font-size: 90%;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.whitefont {
+    color: whitesmoke;
+}
+
+.inputSmall {
+    width: 75px;
+}
+.inputLarge {
+    width: 20vw;
+}
+
+/* #################### */
+/* Chosen dropdown */
+
+.group-result {
+    background-color: rgb(64, 30, 119);
+    color: white;
+}
+
+/*
+.chosen-container .chosen-results {
+    max-height: 70vh;
+}
+*/
+
+/* #####################
+    Top Right corner */
+.topright {
+   position: absolute;
+   text-align: right;
+   right: 60px;
+   top:16px;
+   width:auto;
+}
+
+/* #################### */
+/* Popover */
+
+.popover {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+/* Popover Header */
+.popover-header {
+    background-color: rgba(0, 0, 0, 0.8); 
+    color: whitesmoke; 
+    /*font-size: 28px;*/
+    /*text-align:center;*/
+}
+/* Popover Body */
+.popover-body {
+    background-color: rgba(0, 0, 0, 0.8);
+    color: whitesmoke;
+    /*padding: 25px;*/
+}
+/* Popover Arrow */
+.popover .arrow {
+    border-right-color: black !important;
+    /*color: rgb(51, 46, 46);*/
+    /*background-color: rgb(51, 46, 46);*/
+}
+
+</style>
+
+</head>
+<body>
+
+<div id="topMenu"></div>
+
+<div class="container-fluid">
+
+<!-- ####################################
+    HEADER -->
+<div class="row">
+<div class="col-md-4 bg-warning"><br>
+    <h3>Routes Data Entry</h3>
+<p title="from routes/ folder" data-toggle="tooltip" data-placement="top">Select a route: 
+<select id="jsonSelect"></select></p>
+<small>or.. create a new one >></small>
+</div>
+<div class="col-md-5 bg-primary whitefont"><br>
+
+<div class="row">
+<div class="col-md-4">
+    <p>Route Number: <input id="routeName" class="inputSmall" title="As printed on board" data-toggle="tooltip" data-placement="left"/> </p>
+</div><div class="col-md-4">
+    <p>Depot Code: <input id="depot" class="inputSmall" title="Which depot does this route belong to?" data-toggle="tooltip" data-placement="top" /></p>
+</div>
+<div class="col-md-4">
+    <p>Bus Type: <input id="busType" class="inputSmall" title="Enter if this is not an ordinary bus." data-toggle="tooltip" data-placement="right" /></p>
+</div>
+
+</div>
+<p>Route Long Name: <input id="routeLongName" class="inputLarge" title="example: Medchal to Miyapur" data-toggle="tooltip" data-placement="bottom"/> </p>
+</div>
+<div class="col-md-3 bg-success whitefont"><br>
+<p><button onclick="saveRoute()" class="btn">Save Route Info</button> as <input id="routeFileName" class="inputSmall" title="will be saved in routes/ folder" data-toggle="tooltip" data-placement="bottom" />.json</p>
+<p><span class='saveStatus'></span></p>
+</div>
+</div> <!-- top row over-->
+
+
+<!-- ####################################
+    MAIN CONTENT -->
+<div class="row">
+<!-- ONWARD SIDE-->
+<div class="col-md-6 onward"><br>
+
+<p><big><b>Onward Journey:</b></big> 
+<small>Note: please don't mess with the '|' and lat,lon,confidence values!</small>    
+<br>
+<div id="stops0" class="stopsList" title="One stop per line" data-toggle="popover" data-trigger="hover" data-placement="right" data-html="true" data-content="Examples:<br>Jubilee Bus Stand<br>Patny"></div>
+</p>
+<p>Extra notes if any:<br>
+<textarea id="extra0" class="extra" title="like: non-standard trips like depot trips, back-story of the route, etc"></textarea></p>
+</div>
+
+<!--
+<div class="col-md-2 onward"><br>
+<p>Timings:<br>
+<textarea id="timings0" class="timeList" placeholder="hh:mm" title="Starting times of trips in the day" data-toggle="popover" data-trigger="hover" data-placement="right" data-html="true" data-content="For Monday to Friday.<br>hh:mm format<br>examples:<br>06:30<br>13:40<br>one per line, 24hrs."></textarea>
+</p>
+<p>Weekend Timings: <br><small><a href="#" onclick="weekendCopy(0)"><u>copy from weekday</u></a></small>
+<textarea id="timingsWeekend0" class="timeList timeList-smaller" placeholder="hh:mm" title="Starting times of trips in the day" data-toggle="popover" data-trigger="hover" data-placement="right" data-html="true" data-content="For Saturday, Sunday<br>hh:mm format<br>examples:<br>06:30<br>13:40<br>one per line, 24hrs."></textarea>
+</p>
+<p>Or, frequency:<br>
+<textarea id="freq0" class="freqList" placeholder="hh:mm,mins,hh:mm" title="Frequency" data-toggle="popover" data-trigger="hover" data-placement="left" data-html="true" data-content="starting time, interval, ending time.<br>Example:<br>06:30,25,23:30<br>> every 25 mins between 6.30 and 23.30 hrs.<br>Enter multiple lines if different frequencies in the day.<br>timings in hh:mm, interval in mins."></textarea>
+</p>
+</div>
+-->
+<!-- END OF ONWARD SIDE-->
+
+<!-- RETURN SIDE-->
+<div class="col-md-6 return whitefont"><br>
+<p><big><b>Return Journey:</b></big>&nbsp;&nbsp;&nbsp;&nbsp;<button onclick="reverse()" class="btn btn-sm btn-warning"  title="Warning: this will erase whatever data is currently there!" data-toggle="tooltip" data-placement="right">Reverse-copy Onward Journey</button>
+<br>
+
+<div id="stops1" class="stopsList" title="One stop per line" data-toggle="popover" data-trigger="hover" data-placement="left" data-html="true" data-content="Examples:<br>Patny<br>Jubilee Bus Stand"></div>  
+</p>
+<p>Extra notes if any:<br>
+    <textarea id="extra1" class="extra" title="like: non-standard trips like depot trips, back-story of the route, etc"></textarea></p>
+</div>
+<!--
+<div class="col-md-2 return whitefont"><br>
+    
+
+<p>Timings:
+<textarea id="timings1" class="timeList" placeholder="hh:mm" title="Starting times of trips in the day" data-toggle="popover" data-trigger="hover" data-placement="left" data-html="true" data-content="For Monday to Friday.<br>hh:mm format<br>examples:<br>06:30<br>13:40<br>one per line, 24hrs."></textarea>  
+</p>
+<p>Weekend Timings: <br><small><a href="#" onclick="weekendCopy(1)"><font color="white"><u>copy from weekday</u></font></a></small>
+<textarea id="timingsWeekend1" class="timeList timeList-smaller" placeholder="hh:mm" title="Starting times of trips in the day" data-toggle="popover" data-trigger="hover" data-placement="right" data-html="true" data-content="For Saturday, Sunday<br>hh:mm format<br>examples:<br>06:30<br>13:40<br>one per line, 24hrs."></textarea>
+</p>
+<p>Or, frequency:<br>
+<textarea id="freq1" class="freqList" placeholder="hh:mm,mins,hh:mm" title="Frequency" data-toggle="popover" data-trigger="hover" data-placement="left" data-html="true" data-content="starting time, interval, ending time.<br>Example:<br>06:30,25,23:30<br>> every 25 mins between 6.30 and 23.30 hrs.<br>Enter multiple lines if different frequencies in the day.<br>timings in hh:mm, interval in mins."></textarea>
+</p>
+    
+</div>
+-->
+</div>
+<!-- END OF MAIN CONTENT-->
+
+<!-- FOOTER -->
+<div class="row">
+    <div class="col-md-8"><br>
+        
+        <p>This page is for rapid data entry (or correction) of routes. Enter the route's basic details at top and sequence of stops in each direction in the large text boxes.</p>
+    </div>
+    <div class="col-md-4 bg-success whitefont"><br>
+    Save Changes: <button onclick="saveRoute()" class="btn bg success" title="same as Save button on top" data-toggle="tooltip" data-placement="right">Save Route Info</button></p>
+    <p><span class='saveStatus'></span>
+    <br>
+    </div>
+</div>
+</div><!-- end of container-fluid (full width)  -->
+
+<!-- TOP RIGHT CORNER -->
+<div class="topright"><a name="top"></a><p><small>
+    <a onclick="toggleHints()" href="#" id="toggleHintsLink"  title="click to disable hints like this" data-toggle="tooltip" data-placement="bottom">Hints: ON</a>
+</small></p></div>
+<div id="keyStatus"></div>
+<script src="js/common.js"></script>
+<script src="js/routeEntry.js"></script>
+</body>
+</html>

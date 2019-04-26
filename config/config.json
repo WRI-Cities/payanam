@@ -1,0 +1,17 @@
+{ 
+    "databank" : "stops-databank.csv",
+    "mapped" : "stops_mapped.csv",
+    "datacleaned" : "stopnames-datacleaning-2.1.19.csv",
+    "sanityDistance": 7,
+    "fuzzyTopN" : 10,
+    "timeDefaults": {
+        "trip_times": "06:00, 10:00, 14:00, 18:00, 22:00",
+        "first_trip_start": "06:00",
+        "last_trip_start": "22:00",
+        "hr": 4,
+        "min": 0,
+        "sec": 0,
+        "defaultSpeed": 15
+    },
+    "STARTLOCATION": [17.390491,78.484102]
+}

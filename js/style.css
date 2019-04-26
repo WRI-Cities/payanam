@@ -1,0 +1,32 @@
+/* style.css
+Common styles */
+
+.tabulator {
+    font-size: 0.75em;
+    background-color: #f0f0f0;
+}
+
+.littleTopSpace {
+	margin-top: 5px;
+}
+
+#accordion > .ui-accordion-content {
+    height: 250px;
+    overflow-y: scroll;
+    padding: 1em 1em !important;
+}
+
+/* top menu */
+body {
+    min-height: 1000px;
+}
+
+/*TABS*/
+.ui-widget-header {
+	background: #fff;
+	border: none;
+	border-bottom: 2px solid #e9e9e9;
+}
+.ui-widget.ui-widget-content {
+	border:none;
+}

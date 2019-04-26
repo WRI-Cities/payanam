@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Payanam - View all Routes on Map</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+<link rel="stylesheet" href="lib/leaflet.css" />
+<link href="lib/jquery-ui.css" rel="stylesheet">
+<link href="lib/bootstrap.v4.0.0.min.css" crossorigin="anonymous" alt="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" rel="stylesheet">
+<!--
+-->
+<link rel="stylesheet" href="lib/leaflet-sidebar.css" />
+<link href="js/style.css" rel="stylesheet">
+<link href="lib/simTree.css" rel="stylesheet">
+
+<!-- Put the CSSs first and JSs next -->
+
+<script src="lib/jquery-3.3.1.min.js" type="text/javascript"></script>
+<script src="lib/jquery-ui.min.js" type="text/javascript"></script>
+<script src="lib/leaflet.js"></script>
+<script src="lib/leaflet-sidebar.min.js"></script>
+<script src="lib/simTree.js"></script>
+<script src="lib/papaparse.min.js"></script>
+<script src="lib/Leaflet.Control.Custom.js"></script>
+<script src="lib/leaflet-providers.js"></script>
+
+
+<style>
+    body {
+        padding: 0;
+        margin: 0;
+        min-height: auto; /* override style.css for this page*/
+    }
+
+    html, body, #map {
+        height: 100%;
+    }
+    #map {
+        height: calc(100% - 56px);
+        /*font: 10pt "Helvetica Neue", Arial, Helvetica, sans-serif;*/
+
+    }
+    ul.sim-tree {
+        padding-inline-start: 10px;
+    }
+    div.sidebar {
+        top: 63px;
+    }
+
+    @media (min-width: 1200px) {
+        .sidebar {
+            width: 360px;
+        }
+        .sidebar p {
+            width: 80%;
+        }
+        .sidebar-left ~ .sidebar-map .leaflet-left {
+            left: 370px;
+        }
+    }
+
+    .sidebar .alert {
+            width: 70%;
+        }
+    /*
+    div.sidebar-tabs {
+        left: -2px!important;
+        width: calc(100% + 10px);
+       
+    }
+    .sidebar {
+        background-color: white;
+    }
+    */
+</style>
+</head>
+<body>
+<div id="topMenu"></div>
+
+<div id="sidebar" class="sidebar collapsed">
+<!-- Nav tabs -->
+<div class="sidebar-tabs">
+<ul role="tablist">
+    <li><a href="#home" role="tab"><i class="fa fa-bars"></i></a></li>
+    <!--
+    <li><a href="#profile" role="tab"><i class="fa fa-user"></i></a></li>
+    <li class="disabled"><a href="#messages" role="tab"><i class="fa fa-envelope"></i></a></li>
+    <li><a href="https://github.com/Turbo87/sidebar-v2" role="tab" target="_blank"><i class="fa fa-github"></i></a></li>
+    -->
+</ul>
+
+<ul role="tablist">
+    <li><a href="#settings" role="tab"><i class="fa fa-gear"></i></a></li>
+</ul>
+</div>
+
+<!-- Tab panes -->
+<div class="sidebar-content">
+<div class="sidebar-pane" id="home">
+    <h1 class="sidebar-header">
+        Select Routes to Display
+        <span class="sidebar-close"><i class="fa fa-caret-left"></i></span>
+    </h1>
+    <br>
+    <p>Select a depot below, or expand it to choose individual routes.</p>
+   
+    <div id="tree"></div>
+    <p id="status" class="alert alert-primary"></p>
+    <p class="alert alert-warning"> <small>Note: These shapes come from the reports generation script that runs every 10 mins. So recent changes made won't reflect here for another 10 mins at least.</small></p>
+    
+</div>
+
+<!--
+<div class="sidebar-pane" id="profile">
+    <h2 class="sidebar-header">Profile<span class="sidebar-close"><i class="fa fa-caret-left"></i></span></h2>
+</div>
+
+<div class="sidebar-pane" id="messages">
+    <h1 class="sidebar-header">Messages<span class="sidebar-close"><i class="fa fa-caret-left"></i></span></h1>
+</div>
+
+<div class="sidebar-pane" id="settings">
+    <h1 class="sidebar-header">Settings<span class="sidebar-close"><i class="fa fa-caret-left"></i></span></h1>
+</div>
+-->
+</div>
+</div>
+
+<div id="map" class="sidebar-map"></div>
+
+<script src="js/common.js"></script>
+<script src="js/allMap.js"></script>
+
+</body>
+</html>
