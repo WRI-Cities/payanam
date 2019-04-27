@@ -1,11 +1,15 @@
 # payanam
 
+![screenshot](https://github.com/WRI-Cities/payanam/raw/master/lib/payanam-screenshot.jpg)
+
 A browser-based user-friendly tool for progressively mapping public transport routes when there wasn't geo-data available to begin with, and converting it to static GTFS standard.
 
 Payanam (pronounced as "Paa-ya-nam") means "pathway" in Telugu.
 
 Created by a joint collaboration between [World Resources Institute](https://www.wri-india.org/our-work/topics/cities-transport) (WRI) and [Telangana Open Data Portal](https://www.data.telangana.gov.in/), Telangana, India.   
 Lead programmer: [Nikhil VJ](https://github.com/answerquest) from Pune, India
+
+Initially deployed on https://server.nikhilvj.co.in/payanam/
 
 ----
 
