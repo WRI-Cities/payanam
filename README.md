@@ -4,7 +4,8 @@ A browser-based user-friendly tool for progressively mapping public transport ro
 
 Payanam (pronounced as "Paa-ya-nam") means "pathway" in Telugu.
 
-Created by a joint collaboration between [World Resources Institute](https://www.wri-india.org/our-work/topics/cities-transport) (WRI) and [Telangana Open Data Portal](https://www.data.telangana.gov.in/), Telangana, India.
+Created by a joint collaboration between [World Resources Institute](https://www.wri-india.org/our-work/topics/cities-transport) (WRI) and [Telangana Open Data Portal](https://www.data.telangana.gov.in/), Telangana, India.   
+Lead programmer: [Nikhil VJ](https://github.com/answerquest) from Pune, India
 
 ----
 
@@ -80,3 +81,7 @@ Because Payanam is engineered towards one very specific use case of traditional 
 - Different trip patterns under the same route + direction
 - Fares and transfers
 - Grouping of stops under common stations/terminals
+- Different schedules for specific dates (calendar_dates.txt)
+- Per-stop timings. Instead, just the trip's start and end timings are taken.
+
+We advise users to use this tool only if their situation matches the described use case, and for the further tweaks mentioned, take it to static-GTFS-Manager or other GTFS management tools or services. This community site: [Awesome Transit](https://github.com/CUTR-at-USF/awesome-transit) gives a good listing of all things GTFS.
