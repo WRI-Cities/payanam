@@ -1,7 +1,4 @@
 { 
-    "databank" : "stops-databank.csv",
-    "mapped" : "stops_mapped.csv",
-    "datacleaned" : "stopnames-datacleaning-2.1.19.csv",
     "sanityDistance": 7,
     "fuzzyTopN" : 10,
     "timeDefaults": {
@@ -13,5 +10,10 @@
         "sec": 0,
         "defaultSpeed": 15
     },
-    "STARTLOCATION": [17.390491,78.484102]
+    "databanksList": {
+        "Random Points": "databank/randomPoints.csv",
+        "Mapped Stops": "reports/stops_mapped.csv",
+        "Automapped Stops": "reports/stops_automapped.csv"
+    },
+    "version": "v1.0.0"
 }

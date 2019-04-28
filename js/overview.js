@@ -103,6 +103,7 @@ L.control.custom({
 // ########################
 // RUN ON PAGE LOAD
 $(document).ready(function() {
+    loadDefaults();
     loadRoutes();
 });
 

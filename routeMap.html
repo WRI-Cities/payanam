@@ -94,6 +94,14 @@ textarea {
 	background: rgba(255, 255, 255, 0.644);
 	font-size: 12px;
 }
+
+.scrollbox {
+	overflow:auto;
+	max-height: 250px;
+	width: 90%;
+	background: rgba(255, 240, 28, 0.2);
+	padding: 10px 20px;
+}
 </style>
 
 </head>
@@ -133,14 +141,7 @@ textarea {
 
 <br>
 <h5>DataBank table <small>(dull yellow dots)  <a class="badge badge-secondary" data-toggle="collapse" href="#collapseDatabank" role="button" aria-expanded="false" aria-controls="collapseRoute">show/hide</a></small></h5>
-<p><small> Load: 
-<a href="javascript:;" onclick="loadDatabank('mapped')" class="databank" id="mapped">Loading..</a> | 
-<a href="javascript:;" onclick="loadDatabank()" class="databank" id="databank">Loading..</a> | 
-<a href="javascript:;" onclick="loadDatabank('automapped')" class="databank" id="automapped">Loading..</a> | 
-<a href="javascript:;" onclick="loadDatabank('postoffice')" class="databank" id="postoffice">Loading..</a> | 
-<a href="javascript:;" onclick="loadDatabank('hamlets')" class="databank" id="hamlets">Loading..</a>
-</small></p>
-
+<small><p id="databanks">| </p></small>
 <div class="collapse show" id="collapseDatabank">
     <div id="databankTable"></div>
     <small><p class="littleTopSpace">
@@ -148,31 +149,15 @@ textarea {
     </p></small>
 </div>
 
-<!-- REMOVING FuzzMapping features for now
-<p>
-<small>
-Search databank:
-<input id="searchName" placeholder="stop name" size="15"> 
-<br>
-<label><input type="checkbox" name="fuzzyWuzzyCheck" value="fuzzyWuzzyCheck" id="fuzzyWuzzyCheck" checked>FuzzyWuzzy</label>&nbsp;&nbsp;
-<label><input type="checkbox" name="jellyFishCheck" value="jellyFishCheck" id="jellyFishCheck" checked>JellyFish</label>&nbsp;&nbsp; <button onclick="loadRight()" type="button">Click to fuzzy search</button>
-<br><i>this will run fuzzy search algorithms on the databank and return scored results. May take time so wait while the table loads. You can also just type into the stop name filter </i>
-</small></p>
--->
-
-<!-- maybe later
-<p><small>
-Upload: <small></small><input type="file" id="dataBank" name="dataBank" accept=".csv" class="btn btn-sm btn-outline-secondary">
-</small></p>
--->
-
 </div>
 <div class="col-md-6">
 
 <small>
 <span id="numMapped">x stops mapped</span> | see map-center on: 
-<big><a href="javascript:{}" onclick="openExternalMap('g')" class="badge badge-primary">Gmaps</a> &nbsp; 
-<a href="javascript:{}" onclick="openExternalMap('m')" class="badge badge-success">Mapillary</a></big>
+<big><a href="javascript:{}" onclick="openExternalMap('g')" class="badge badge-primary">Gmaps</a>&nbsp; 
+<a href="javascript:{}" onclick="openExternalMap('m')" class="badge badge-primary">Mapillary</a>&nbsp;
+<a href="javascript:{}" onclick="openExternalMap('p')" class="badge badge-primary">Pic4carto</a>
+</big>
 
 </small>
 <div id="mapContainer">
@@ -190,12 +175,10 @@ Upload: <small></small><input type="file" id="dataBank" name="dataBank" accept="
 </small></p>
 
 
-
-<br>
 <div class="row">
 <div class="col-md-6">
 
-    <p><button class="btn btn-success" onclick="saveRoute()">Save changes to Route info</button></p>
+    <p><button class="btn btn-success" onclick="saveRoute()" title="click this regularly while making changes!">Save Route</button></p>
     <p><small><span id="routeSaveStatus">&nbsp;</span></small></p>
     
 	<hr>
@@ -208,7 +191,8 @@ Upload: <small></small><input type="file" id="dataBank" name="dataBank" accept="
     
 </div><div class="col-md-6">
     
-    <p><button class="btn btn-sm btn-warning" onclick="routeSuggest()">Load Automatic Suggestions<br>for this route</button> </p>
+	<p><button class="btn btn-sm btn-warning" onclick="routeSuggest()">Load Suggestions<br>for this route</button> &nbsp;
+	<label title="Do similar-name matching instead of exact. Note: results can be very inaccurate"><input type="checkbox" id="fuzzy"> Fuzzy</label></p>
     <p><small><span id="routeSuggestStatus"></span></small></p>
 	<p class="alert alert-warning"><small>Notes: Save any changes done first!</small></p>
 	<hr>

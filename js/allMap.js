@@ -61,6 +61,7 @@ var layerControl = L.control.layers(baseLayers, overlays, {collapsed: true, auto
 // RUN ON PAGE LOAD
 
 $(document).ready(function() {
+    loadDefaults();
     // load depots
 	loadDepots();
 	loadRoutes();

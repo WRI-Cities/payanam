@@ -10,7 +10,7 @@ const waitTime = 300;
 var stops0 = ace.edit("stops0");
 var stops1 = ace.edit("stops1");
 var globalChangesDone = false;
-var showHints = true;
+var showHints = false;
 var statusTimer; // clear out any previous timer in the status messages. from https://stackoverflow.com/a/3015351/4355695
 
 var globalRoute = '';
@@ -24,10 +24,9 @@ $(document).ready(function() {
 	$('[data-toggle="popover"]').popover();
 	$('[data-toggle="tooltip"]').tooltip();
 	
-//	loadRoutesList();
+	loadDefaults();
 	loadJsonsList();
-	// drowndown handlers:
-
+	
 	//ACE editor : listen for changes
 	stops0.session.on('change', function(delta) {
 		globalChangesDone = true;
@@ -36,17 +35,6 @@ $(document).ready(function() {
 	stops1.session.on('change', function(delta) {
 		globalChangesDone = true;
 	});
-
-	/*
-	$('#routeSelect').on('change', function (e) {
-		var valueSelected = this.value;
-		console.log(valueSelected);
-		if( valueSelected == '') { 
-			return;
-		}
-		loadRoute(valueSelected);
-	});
-	*/
 
 	$('#jsonSelect').on('change', function (e) {
 		
@@ -70,6 +58,7 @@ $(document).ready(function() {
 		$("#routeFileName").val( this.value.replace(/[^A-Za-z0-9-_]/g, "_") );
 	});
 
+	toggleHints();
 	// Automatically turn hints off after this many seconds, if they're still on.
 	setTimeout(function() { if(showHints) toggleHints(); }, 5*1000);
 

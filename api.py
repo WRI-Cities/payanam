@@ -60,13 +60,7 @@ class loadJson(tornado.web.RequestHandler):
             self.set_status(400)
             self.write("Error: Need Mapper level API Key.")
             return
-        '''
-        pw = self.get_argument('pw',default='')
-        if pw != configRules.get('PW_MAPPER',''):
-            self.set_status(400)
-            self.write("Error: Need Mapper level password.")
-            return
-        '''
+       
         filename = self.get_argument('route',default='')
         data = json.loads( self.request.body.decode('UTF-8'), object_pairs_hook=OrderedDict )
         logmessage(filename)
@@ -101,7 +95,7 @@ class GPXUpload(tornado.web.RequestHandler):
 
 class routeSuggest(tornado.web.RequestHandler):
     def get(self):
-        # /API/routeSuggest?route=filename&key=key
+        # /API/routeSuggest?route=filename&fuzzy=fuzzy&key=key
         start = time.time()
 
         filename = self.get_argument('route',default='')
@@ -118,8 +112,8 @@ class routeSuggest(tornado.web.RequestHandler):
         
         fuzzy = ( self.get_argument('fuzzy',default='n') == 'y' )
 
-        logmessage('routeSuggest:',filename)
-        status = routeSuggestFunc(filename=filename, fuzzy=fuzzy, key=key)
+        # logmessage('routeSuggest:',filename)
+        status = routeSuggestFunc(filename=filename, fuzzy=fuzzy, suggestManual=True, mapAgain=True, key=key)
         self.write(status)
         end = time.time()
         logmessage("routeSuggest GET call took {} seconds.".format(round(end-start,2)))
@@ -128,13 +122,7 @@ class routeLock(tornado.web.RequestHandler):
     def get(self):
         # /API/routeLock?route=filename
         start = time.time()
-        '''
-        pw = self.get_argument('pw',default='')
-        if pw != configRules.get('PW_REVIEWER',''):
-            self.set_status(400)
-            self.write("Error: Need Reviewer level password.")
-            return
-        '''
+        
         key = self.get_argument('key',default='')
         if not checkAccess(key,'REVIEW'):
             self.set_status(400)
@@ -160,7 +148,6 @@ class bulkSuggest(tornado.web.RequestHandler):
 
         key = self.get_argument('key',default='')
         if not checkAccess(key,'ADMIN'):
-            #if pw != configRules.get('PW_ADMIN',''):
             self.set_status(400)
             self.write("Error: Need Admin level API Key.")
             return
@@ -214,7 +201,6 @@ class keyCheck(tornado.web.RequestHandler):
         returnData = userInfo(key)
 
         if not returnData:
-            #if pw != configRules.get('PW_ADMIN',''):
             self.set_status(400)
             self.write("Error: Invalid API Key.")
             return
@@ -230,7 +216,6 @@ class catchJumpers(tornado.web.RequestHandler):
 
         key = self.get_argument('key',default='')
         if not checkAccess(key,'ADMIN'):
-            #if pw != configRules.get('PW_ADMIN',''):
             self.set_status(400)
             self.write("Error: Need Admin level API Key.")
             return

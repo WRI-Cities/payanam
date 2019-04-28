@@ -18,7 +18,8 @@ var globalChangesDone = false;
 // On page load
 $(document).ready(function() {
     $.ajaxSetup({ cache: false }); // from https://stackoverflow.com/a/13679534/4355695 to force ajax to always load from source, don't use browser cache. This prevents browser from loading old route jsons.
-
+    
+    loadDefaults();
     loadJsonsList();
 
     $('#jsonSelect').on('change', function (e) {

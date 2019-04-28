@@ -35,9 +35,6 @@ configFolder = os.path.join(root,'config')
 reportsFolder = os.path.join(root,'reports')
 databankFolder = os.path.join(root,'databank')
 backupsFolder = os.path.join(root,'backups')
-# uploadFolder = os.path.join(root,'uploads')
-# exportFolder = os.path.join(root,'export') # 4.9.18 putting exports here now
-# dataCleaningFolder = os.path.join(root,'datacleaning')
 
 configFile = 'config.json'
 accessFile = 'access.csv'
@@ -82,7 +79,6 @@ def make_app():
         # (r"/(.*)", tornado.web.StaticFileHandler, {"path": root, "default_filename": startPage})
         (r"/(.*)", MyStaticFileHandler, {"path": root, "default_filename": startPage})
     ])
-# note: using 1.html as homepage here.
 
 
 # for catching Ctrl+C and exiting gracefully. From https://nattster.wordpress.com/2013/06/05/catch-kill-signal-in-python/

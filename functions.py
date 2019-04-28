@@ -115,13 +115,24 @@ def loadMappedStops():
     
 
 def loadDataBank():
-    dfDataBank = pd.read_csv( os.path.join(databankFolder, configRules.get('databank','')), dtype=str).fillna('')
-    dfDataBank['zapped'] = dfDataBank['stop_name'].apply(zapper)
+    databankHolder = list(configRules.get('databanksList',{}).values())
+    if not len(databankHolder):
+        logmessage("loadDataBank(): Warning: No databank listed in config.json under databanksList key.")
+        return pd.DataFrame()
+    
+    databankFile = databankHolder[0]
+    logmessage('loadDataBank(): Databank:',databankFile)
+    try:
+        dfDataBank = pd.read_csv( os.path.join(root,databankFile), dtype=str).fillna('')
+        dfDataBank['zapped'] = dfDataBank['stop_name'].apply(zapper)
+    except FileNotFoundError as e:
+        logmessage("Warning: No databank file found.")
+        dfDataBank = pd.DataFrame()
     return dfDataBank
 
 
-# def routeSuggestFunc(filename, dfMapped=loadMappedStops(), dfDataBank=loadDataBank(), mapFirst=False, suggestManual=False, mapAgain=False, fuzzy=False, key=False):
-def routeSuggestFunc(filename, options={}, key=False):
+def routeSuggestFunc(filename, dfMapped=False, dfDataBank=False, mapFirst=False, suggestManual=False, mapAgain=False, fuzzy=False, key=False):
+    # def routeSuggestFunc(filename, options={}, key=False):
     '''
     this function will load a file, 
     process each stop,
@@ -135,25 +146,28 @@ def routeSuggestFunc(filename, options={}, key=False):
     mapAgain: Whether to do the suggestion + mapping (if mapFirst) op for the automapped stops also (confidence=0), or to skip those and just look for the blank ones. Default False.
  
     fuzzy : Apply fuzzy matching instead of direct matching
-
     '''
-
-
     if not os.path.exists(os.path.join(routesFolder,filename)):
         logmessage('routeSuggestFunc: this file {} doesnt even exist! Exiting'.format(filename))
         return 'Hey! this file {} doesnt even exist!'.format(filename)
-
+    
+    # check and load banks
+    if not dfDataBank: dfDataBank=loadDataBank()
+    if not dfMapped: dfMapped=loadMappedStops()
+    logmessage('Lengths: databank:{}, stops_mapped:{}'.format(len(dfDataBank),len(dfMapped)))
+    
     routeD = json.load(open(os.path.join(routesFolder,filename)), object_pairs_hook=OrderedDict)
     depot = os.path.dirname(filename)
     logmessage('filename:',filename)
-    
     count = 0
+    suggestionsCount = 0
 
     # lets put both directions in one loop:
     for direction_id in ['0','1']:
         
         stopsArrayName = 'stopsArray' + direction_id
         for stopRow in routeD.get(stopsArrayName,[]):
+            
             # first, get-out conditions:
             if not stopRow.get('stop_name',False): 
                 logmessage('routeSuggestFunc: No stop_name found, dir:{}, file:{}'.format(direction_id, filename))
@@ -173,6 +187,7 @@ def routeSuggestFunc(filename, options={}, key=False):
             if len(suggestionStr):
                 stopRow['suggested'] = suggestionStr
                 # this way, a blank suggestion does not replace an already populated one.
+                suggestionsCount += 1
 
             if stopRow.get('stop_lat',False) and ( stopRow.get('confidence','') not in ['0',0]):
                 # suggestions toh ho gaya, but this is a manually mapped stop. No mapping!
@@ -187,7 +202,7 @@ def routeSuggestFunc(filename, options={}, key=False):
                     stopRow['confidence'] = '0' # indicates it was auto-mapped
                     count += 1
     
-    logmessage(count,'stops mapped.')
+    logmessage(count,'stops mapped.',suggestionsCount,'stops given sugggestions.')
     backup(os.path.join(routesFolder,filename))
     
     if key:
@@ -301,6 +316,7 @@ def backup(filepath):
 
 
 def routeSource(stopRow):
+    # called from inside the suggestionLocations function. gets one row if a DF
     sourceString = stopRow['routeName'] if stopRow['routeName'] else stopRow['jsonFile'].split('.')[0]
     sourceString += '(done)' if stopRow['workStatus'] == 'locked' else ''
     # logmessage(sourceString)
@@ -351,7 +367,7 @@ def suggestLocations(stop_name, depot, direction_id, dfMapped, dfDataBank, fuzzy
         if stopRow['workStatus'] == 'locked':
             rank += 4
 
-        return rank # its ok lets keep it int only
+        return rank
     # ------------
 
     if len(filter1): 
@@ -391,7 +407,7 @@ def suggestLocations(stop_name, depot, direction_id, dfMapped, dfDataBank, fuzzy
     # Removing duplicates by lat-long; higher-priority ones remain
     filter4 = filter3.drop_duplicates(subset=['stop_lat','stop_lon']).copy().reset_index(drop=True)
     
-    # logmessage('For stop_name {}: {} mapped, {} databank matches found. Ranked and boiled down to {} matches.'.format(stop_name, len(filter1), len(dbfilter1), len(filter4) ))
+    logmessage('"{}": {} mapped, {} databank matches found. Ranked and boiled down to {} matches.'.format(stop_name, len(filter1), len(dbfilter1), len(filter4) ))
 
     # first lat-lon
     lat = filter4['stop_lat'].iloc[0]
@@ -419,7 +435,7 @@ def getallRoutes(targetFolder=routesFolder, ext='.json'):
 
 
 def userInfo(key):
-    # accessFile,     configFolder
+    # accessFile,configFolder
     keysdf = pd.read_csv(os.path.join(configFolder,accessFile), dtype=str).fillna('')
 
     matchdf = keysdf[ keysdf['key']==key ].copy().reset_index(drop=True)
@@ -476,7 +492,7 @@ def sanityCheck(stopRow,beforeLat,beforeLon,afterLat,afterLon):
     
     try:
         # logmessage('\n\n',stopRow)
-        # print('Surrounding lat-longs: Before:',beforeLat,beforeLon,' After:',afterLat,afterLon)
+        # logmessage('Surrounding lat-longs: Before:',beforeLat,beforeLon,' After:',afterLat,afterLon)
         lat = float( stopRow.get('stop_lat','') )
         lon = float( stopRow.get('stop_lon','') )
         beforeLat = float(beforeLat)
@@ -564,7 +580,7 @@ def sanityFunc(filename,key=None,dryRun=True):
                     routeD['stopsArray{}'.format(direction_id)][i]['confidence'] = '1'
         
         logmessage('{} direction {}: {} mapped stops'.format(filename,direction_id,len(mappedInd)))
-        # print(mappedInd)
+        
         # take only mapped stops
         for n,ind in enumerate(mappedInd):
             if ((n-1) < 0) or ((n+1) >= len(mappedInd)) or ( routeD['stopsArray{}'.format(direction_id)][mappedInd[n]].get('confidence','') not in [0,'0']):
@@ -576,7 +592,7 @@ def sanityFunc(filename,key=None,dryRun=True):
             if 0 < lastStopRemoved < 3: 
                 previousOffset -= lastStopRemoved
             if lastStopRemoved > 2:
-                print('Too many prior stops removed, so skipping sanityCheck for next one.')
+                logmessage('Too many prior stops removed, so skipping sanityCheck for next one.')
                 lastStopRemoved = 0 # reset, so for next one there is a before-location.
                 continue
             
@@ -587,7 +603,7 @@ def sanityFunc(filename,key=None,dryRun=True):
             recco = sanityCheck(routeD['stopsArray{}'.format(direction_id)][mappedInd[n]],beforeLat,beforeLon,afterLat,afterLon)
 
             if type(recco) == list:
-                print('taking new lat-longs:',recco)
+                logmessage('taking new lat-longs:',recco)
                 routeD['stopsArray{}'.format(direction_id)][mappedInd[n]]['stop_lat'] = str(recco[0])
                 routeD['stopsArray{}'.format(direction_id)][mappedInd[n]]['stop_lon'] = str(recco[1])
                 routeD['stopsArray{}'.format(direction_id)][mappedInd[n]]['confidence'] = '0'
@@ -874,9 +890,6 @@ def storeTimings(filename,data,key):
     # let specfics vary; over-write the whole timeStructure_{} objects in the json
     routeD['timeStructure_0'] = data.get('timeStructure_0',{}).copy()
     routeD['timeStructure_1'] = data.get('timeStructure_1',{}).copy()
-    
-    # print(routeD['timeStructure_0'])
-    # print(routeD['timeStructure_1'])
     
     if key:
         info = userInfo(key)

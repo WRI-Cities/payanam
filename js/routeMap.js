@@ -10,9 +10,7 @@ moved here from RouteMapper
 const routeTable_height = "400px";
 const globalRandom = (new Date).getTime();
 console.log(globalRandom);
-//const suggestedTabularColor = '#b9e8c3'; // used in tabulator
 
-var globalIndex = '';
 var clickedflag = false;
 var debugMode = true;
 var URLParams = {}; // for holding URL parameters
@@ -31,12 +29,9 @@ var depotsLayer = new L.geoJson(null); // for depots
 var globalRoute = '';
 var globalChangesDone = false;
 
-// databanks : loading them into global variables
-var global_stops_mapped = [];
-var global_databank = [];
-var global_stops_automapped = [];
-var global_postoffice = [];
-var global_hamlets = [];
+// Databank: one json to rule them all
+var global_DB = {};
+
 // #################################
 /* 2. Initiate tabulators */
 
@@ -90,12 +85,12 @@ var routeTable = new Tabulator("#routeTable", {
 			if(confirm('Are you sure you want to remove lat-long values for this stop?'))
 				cell.getRow().update({'stop_lat':'','stop_lon':'', 'confidence':''});
 				if(map.hasLayer(lineLayer)) {
-					routeLines();
+					map.removeLayer(lineLayer);
 					routeLines();
 				}
 			}
 		},
-		{title:"offset", field:"offset", headerFilter:"input", editor:"input", headerTooltip:"arrival time, in mins after first stop", headerSort:false },
+		//{title:"offset", field:"offset", headerFilter:"input", editor:"input", headerTooltip:"arrival time, in mins after first stop", headerSort:false },
 		{title:"stop_desc", field:"stop_desc", editor:"input", headerFilter:"input", width:100, headerSort:false },
 		{title:"suggested", field:"suggested", width:100, headerSort:false },
 		{formatter:"buttonCross", align:"center", title:"del", width:20, headerSort:false, headerTooltip:"delete a stop", cellClick:function(e, cell){
@@ -105,10 +100,6 @@ var routeTable = new Tabulator("#routeTable", {
 		},
 	],
 	rowSelected:function(row){ //when a row is selected
-		// document.getElementById('searchName').value = row.getData().stop_name; // of fuzzy, retired
-		// console.log('ID: ' + row.getIndex());
-		// globalIndex = row.getIndex();
-		
 		setTimeout(function() {
 			hide( document.querySelector("#panel") ); // when changing to next stop, old stop shouldn't show.
 
@@ -123,18 +114,12 @@ var routeTable = new Tabulator("#routeTable", {
 				if (!map.hasLayer(stopsLayer)) map.addLayer(stopsLayer); // to do : check if visible already, then show if not
 				mapZoomHere(lat,lon);
 			} 
-			// else loadRight(); // if not already mapped, then fuzzy search
 	
 		}, 500); //wait then run all this
 	},
 	rowDeselected:function(row){ //when a row is selected
 		hide( document.querySelector("#panel") );
-		//$('#autoSuggest').html('');
 		suggestedLayer.clearLayers();
-		//$('#autoSuggest').hide('slow');
-	},
-	dataEdited:function(data){
-		//if(data.length) mapStops();
 	},
 	rowUpdated:function(row){
 		setTimeout(mapStops,500);
@@ -209,26 +194,7 @@ var databankTable = new Tabulator("#databankTable", {
 		{title:"stop_lat", field:"stop_lat", headerSort:false },
 		{title:"stop_lon", field:"stop_lon", headerSort:false },
 		{title:"stop_id", field:"stop_id", headerFilter:"input" },
-		{title:"stop_desc", field:"stop_desc", headerFilter:"input" },
-
-		/*
-		// Top algos, one of Fuzzywuzy and other of Jellyfish
-		{title:"Fpartial", field:"Fpartial", headerFilter:"input", sorter:"number", headerTooltip:"Fuzzywuzzy partial ratio" },
-		{title:"JjaroW", field:"JjaroW", headerFilter:"input", sorter:"number", headerTooltip:"Jellyfish jaro_winkler" },
-
-		// Fuzzywuzzy:
-		
-		{title:"Fsimple", field:"Fsimple", headerFilter:"input", sorter:"number", headerTooltip:"Fuzzywuzzy ratio" },
-		{title:"FtokenSort", field:"FtokenSort", headerFilter:"input", sorter:"number", headerTooltip:"Fuzzywuzzy token_sort_ratio" },
-		{title:"FtokenSet", field:"FtokenSet", headerFilter:"input", sorter:"number", headerTooltip:"Fuzzywuzzy token_set_ratio" },
-		
-		// Jellyfish:
-		{title:"Jlevenshtein", field:"Jlevenshtein", headerFilter:"input", sorter:"number", headerTooltip:"Jellyfish levenshtein_distance" },
-		{title:"Jdamerau", field:"Jdamerau", headerFilter:"input", sorter:"number", headerTooltip:"Jellyfish damerau_levenshtein_distance" },
-		{title:"Jhamming", field:"Jhamming", headerFilter:"input", sorter:"number", headerTooltip:"Jellyfish hamming_distance" },
-		{title:"JjaroD", field:"JjaroD", headerFilter:"input", sorter:"number", headerTooltip:"Jellyfish jaro_distance" },
-		{title:"Jmatch", field:"Jmatch", headerFilter:"input", sorter:"number", headerTooltip:"Jellyfish match_rating_comparison" },
-		*/
+		{title:"stop_desc", field:"stop_desc", headerFilter:"input" }
 	],
 	rowSelected:function(row){ //when a row is selected
 		var lat = parseFloat(row.getData().stop_lat);
@@ -314,9 +280,6 @@ var dragmarkerOptions = {
 	interactive: false
 };
 var dragmarker = L.circleMarker(null, dragmarkerOptions);
-//layerControl.addOverlay(dragmarker , "Marker");
-
-//lineLayer.addTo(map);
 
 var overlays = {
 	"Marker" : dragmarker,
@@ -440,7 +403,8 @@ $(document).ready(function() {
 	// load depots
 	loadDepots();
 
-	setTimeout(function(){ loadBanksBackground(); }, 5000); // run 5 secs after page loads
+	loadDefaults(callbackFlag=true,callback=loadBanksBackground);
+	//setTimeout(function(){ loadBanksBackground(); }, 5000); // run 5 secs after page loads
 	
 });
 
@@ -534,8 +498,8 @@ function loadRoute(firstTime=true) {
 		extra0: ${data['extra0'] || ''}<br>
 		extra1: ${data['extra1'] || ''}<br><br>
 		changeLog:<br>
-		<small>${changes || ''}
-		<br>(times in UTC)</small>
+		<div class="scrollbox"><small>${changes || ''}
+		(times in UTC)</small></div>
 
 		`;
 		$('#additionalInfo').html(additionalInfo);
@@ -618,13 +582,13 @@ function routeSuggest() {
 			return;
 		else globalChangesDone = false;
 	}
-
-	//pw = prompt('Please provide a Mapper level password.');
-	// use globalApiKey
+	
+	var fuzzy = 'n';
+    if(document.querySelector('#fuzzy').checked) fuzzy = 'y';
 	
 	$('#routeSuggestStatus').html(`<p class="alert alert-warning">Processing..</p>`);
 
-	$.get( `${APIpath}routeSuggest?route=${globalRoute}&key=${globalApiKey}`, function( response ) {
+	$.get( `${APIpath}routeSuggest?route=${globalRoute}&fuzzy=${fuzzy}&key=${globalApiKey}`, function( response ) {
 		$('#routeSuggestStatus').html(`<p class="alert alert-success">${response}</p>`);
 		setTimeout(function(){ $('#routeSuggestStatus').html(''); }, 180000);
 		loadRoute(firstTime=false);
@@ -681,46 +645,6 @@ function makeStopRow(element) {
 	return rowJson;
 }
 
-
-function loadDatabank(src="databank") {
-	
-	/*var global_stops_mapped = [];
-	var global_databank = [];
-	var global_stops_automapped = [];
-	var global_postoffice = [];*/
-	switch (src) {
-		case 'mapped':
-			databankTable.setData(global_stops_mapped);
-			break;
-		
-		case 'automapped':
-			databankTable.setData(global_stops_automapped);
-			break;
-		
-		case 'postoffice':
-			databankTable.setData(global_postoffice);
-			break;
-		
-		case 'hamlets':
-			databankTable.setData(global_hamlets);
-			break;
-		
-		default:
-			databankTable.setData(global_databank);
-			break;
-	}
-	/*
-	Papa.parse(`${filename}?_=${globalRandom}`, {
-		download: true,
-		header: true,
-		skipEmptyLines: true,
-		complete: function(results, file) {
-			//console.log("Parsing complete:", results, file);
-			databankTable.setData(results.data);
-		}
-	});*/
-}
-
 function mapToSelectedRow(lat,lon) {
 	console.log('mapToSelectedRow():',lat,lon);
 	var selectedRows = routeTable.getSelectedRows(); //$("#left-table").tabulator("getSelectedRows");
@@ -729,12 +653,10 @@ function mapToSelectedRow(lat,lon) {
 	row.getCell('stop_lat').setValue(lat);
 	row.getCell('stop_lon').setValue(lon);
 	row.getCell('confidence').setValue($('#confidenceSelect').val());
-	//row.getCell('source').setValue('manual');
-	//row.getCell('source_stop_id').setValue('');
-	//row.getCell('source_stop_name').setValue('');
+	
 	mapStops();	
 	if(map.hasLayer(lineLayer)) {
-		routeLines();
+		map.removeLayer(lineLayer);
 		routeLines();
 	}
 
@@ -827,13 +749,10 @@ function mapDataBank(limit=false, filter=true) {
 	}
 	
 	if( ! map.hasLayer(databank) ) map.addLayer(databank);
-
-	//map.fitBounds(databank.getBounds(), {padding:[-20,-20], maxZoom:15}); 
-
 }
 
 
-function mapStops(firstRun=false, zoomBack=true){
+function mapStops(firstRun=false){
 
 	if(firstRun) firstRunDone = true; // only dataloaded callback sends firstRun as true
 
@@ -881,10 +800,6 @@ function mapStops(firstRun=false, zoomBack=true){
 		stopmarker.properties = stoprow;
 		stopmarker.addTo(stopsLayer);
 	}
-	if (map.hasLayer(stopsLayer) && mappedList.length & zoomBack) 
-		//map.fitBounds(stopsLayer.getBounds(), {padding:[20,20], maxZoom:15}); 
-		;
-	// if the layer is activated, then zoom to fit.
 }
 
 // function directionDecide(stoprow){} : moved to common.js
@@ -933,7 +848,7 @@ function mapCopyOver() {
 			//row.getCell('source').setValue(source.source);
 			//row.getCell('source_stop_id').setValue(source.stop_id);
 			//row.getCell('source_stop_name').setValue(source.stop_name);
-			mapStops(firstRun=false, zoomBack=false);
+			mapStops(firstRun=false);
 		}	
 		else {
 			alert('Error: No row in data bank table is selected.');
@@ -945,8 +860,6 @@ function mapCopyOver() {
 		return;
 	}
 }
-
-
 
 function mapGPX(data) {
 	console.log(data);
@@ -983,7 +896,6 @@ function mapGPX(data) {
 
 function addStop() {
 	routeTable.addRow({'stop_name': $('#addStop').val() });
-	//$("#left-table").tabulator('addRow');
 }
 
 function routeLines() {
@@ -1015,11 +927,9 @@ function routeLines() {
 	if(dir0Line.length)
 		var dir0MapLine = L.polyline.antPath(dir0Line, {color: stopOnwardColor, weight:2, delay:1500, interactive:false }).addTo(lineLayer);
 	
-
 	if(dir1Line.length)
 		var dir1MapLine = L.polyline.antPath(dir1Line, {color: stopReturnColor, weight:2, delay:1500, interactive:false }).addTo(lineLayer);
 
-	
 	if (!map.hasLayer(lineLayer))
 		map.addLayer(lineLayer);
 }
@@ -1147,7 +1057,6 @@ function reSequence() {
 		}
 	}
 	routeTable.setData(data);
-
 }
 
 function listChanges(changesJson) {
@@ -1161,89 +1070,41 @@ function listChanges(changesJson) {
 	return returnHTML;
 }
 
-function loadBanksBackground() {
-	// to do: load up all the databanks in background to global variables. They will be used by tabulator to load up etc.
-	// this function is called at end of page load afer some timeout
-	
-	// reports/stops_mapped.csv
-	// databank/stops-databank.csv
-	// reports/stops_automapped_unique.csv
-	// databank/postoffice.csv
-	console.log((new Date).getTime(),'Commencing loading of databanks.');
+function loadBanksBackground(data) {
+	// 27.4.19: Intervention : parameterizing this
+	// how to store in memory : create a global json object on the same lines!
+	// from https://stackoverflow.com/a/5737136/4355695 : Object.entries() loops through key-value pairs in a json. Ref: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/entries
+	Object.entries(data['databanksList']).forEach(
+		([title, filename]) => { 
+			console.log('Loading ',title, filename); 
 
-	let filename = 'reports/stops_mapped.csv';
-	Papa.parse(`${filename}?_=${globalRandom}`, {
-		download: true,
-		header: true,
-		skipEmptyLines: true,
-		complete: function(results, file) {
-			// pre-process it a bit
-			results.data.forEach(r => {
-				r['source'] = `${r['folder']}/${r['jsonFile']}:dir${r['direction_id']}`;
+			Papa.parse(`${filename}?_=${globalRandom}`, {
+				download: true,
+				header: true,
+				skipEmptyLines: true,
+				complete: function(results, file) {
+					// pre-process it a bit if its one of the reports
+					if( filename.includes('reports/') ) {
+						results.data.forEach(r => {
+							r['source'] = `${r['folder']}/${r['jsonFile']}:dir${r['direction_id']}`;
+						});
+					}
+					global_DB[title] = results.data;
+					console.log((new Date).getTime(),`${filename} loaded.`);
+					document.getElementById('databanks').innerHTML += `<a href="javascript:;" onclick="loadDatabank('${title}')">${title}</a> | `;
+				},
+				error: function(err, file, inputElem, reason) {
+					console.log(`${filename} not found.`);
+				}
 			});
-			global_stops_mapped = results.data;
-			console.log((new Date).getTime(),'stops_mapped.csv loaded');
-			$('.databank#mapped').html('Mapped Stops');
-		},
-		error: function(err, file, inputElem, reason) {
-			console.log(`${filename} not found. please run reports generation script once.`);
-			$('.databank#mapped').hide();
-        }
-	});
-	
-	filename = 'databank/stops-databank.csv';
-	Papa.parse(`${filename}?_=${globalRandom}`, {
-		download: true,
-		header: true,
-		skipEmptyLines: true,
-		complete: function(results, file) {
-			global_databank = results.data;
-			console.log((new Date).getTime(),'stops-databank.csv loaded');
-			$('.databank#databank').html('Databank');
-
 		}
-	});
+	);
+}
 
-	filename = 'reports/stops_automapped_unique.csv';
-	Papa.parse(`${filename}?_=${globalRandom}`, {
-		download: true,
-		header: true,
-		skipEmptyLines: true,
-		complete: function(results, file) {
-			// pre-process it a bit
-			results.data.forEach(r => {
-				r['source'] = `${r['folder']}/${r['jsonFile']}:dir${r['direction_id']}`;
-			});
-			global_stops_automapped = results.data;
-			console.log((new Date).getTime(),'stops_automapped_unique.csv loaded');
-			$('.databank#automapped').html('Automapped Stops');
-		}
-	});
-
-	filename = 'databank/postoffice.csv';
-	Papa.parse(`${filename}?_=${globalRandom}`, {
-		download: true,
-		header: true,
-		skipEmptyLines: true,
-		complete: function(results, file) {
-			global_postoffice = results.data;
-			console.log((new Date).getTime(),'postoffice.csv loaded');
-			$('.databank#postoffice').html('Post Offices');
-		}
-	});
-
-	filename = 'databank/hamlets-hyderabad-region.csv';
-	Papa.parse(`${filename}?_=${globalRandom}`, {
-		download: true,
-		header: true,
-		skipEmptyLines: true,
-		complete: function(results, file) {
-			global_hamlets = results.data;
-			console.log((new Date).getTime(),'hamlets-hyderabad-region.csv loaded');
-			$('.databank#hamlets').html('Hamlets');
-		}
-	});
-
+function loadDatabank(src="databank") {
+	console.log(`loading ${src} onto the databank table and the map.`);
+	// console.log(global_DB[src]);
+	databankTable.setData(global_DB[src]);
 }
 
 function toggleLayer(which="suggested") {

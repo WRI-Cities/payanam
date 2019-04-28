@@ -195,7 +195,7 @@ function topMenu() {
 
     </ul>
     <span class="navbar-text"><small>
-      <a href="admin.html">Admin</a>
+      <a id="versionNum" href="https://github.com/WRI-Cities/payanam" target="_blank"></a> | <a href="admin.html">Admin</a>
     </small></span>
   </div>
 </nav>
@@ -214,13 +214,19 @@ function openExternalMap(site='m'){
 	let lat = map.getCenter().lat;
 	let lon = map.getCenter().lng;
 	let zoom = map.getZoom();
+  var url = '';
 
-	if (site != 'm')
-		var url = `https://maps.google.com/maps?q=${lat},${lon}+(My+Point)&z=${zoom}&ll=${lat},${lon}`;
+	if (site == 'g')
+		url = `https://maps.google.com/maps?q=${lat},${lon}+(My+Point)&z=${zoom}&ll=${lat},${lon}`;
 	// from https://webapps.stackexchange.com/a/54163/162017 
 	
-	else
-		var url = `https://www.mapillary.com/app/?lat=${lat}&lng=${lon}&z=17`;
+	else if (site == 'p') {
+    let fromStamp = '1420070400000'; // from 2015-01-01
+    url = `http://projets.pavie.info/pic4carto/index.html?from=${fromStamp}#${zoom}/${lat}/${lon}`;
+  }
+  
+  else 
+    url = `https://www.mapillary.com/app/?lat=${lat}&lng=${lon}&z=17`;
 		
 	console.log(url);
 	var win = window.open(url, '_blank');
@@ -320,10 +326,14 @@ function openMapillary(searchRadius=1000) {
 
 }
 
-function loadDefaults() {
+function loadDefaults(callbackFlag=false, callbackFunc=null) {
     $.getJSON('config/config.json', function(data) {
         defaults = data;
         $('#defaultSpeed').html(data['timeDefaults']['defaultSpeed']);
+        $('#versionNum').html(data['version']);
+
+        // if a callback function has been given, then on json load, execute that function passing the json data as argument.
+        if(callbackFlag) callbackFunc(data); 
     });
 
 }
