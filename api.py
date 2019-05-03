@@ -33,23 +33,9 @@ class loadJsonsList(tornado.web.RequestHandler):
         self.write(returnContent)
         end = time.time()
         logmessage("loadJsonsList GET call took {} seconds.".format(round(end-start,2)))
+        logUse('routesList')
 
 class loadJson(tornado.web.RequestHandler):
-    def get(self):
-        # /API/loadJson?route=filename
-        start = time.time()
-        filename = self.get_argument('route',default='')
-        logmessage(filename)
-        if not filename or not os.path.exists(os.path.join(routesFolder,filename)):
-            self.set_status(400)
-            self.write("Error: invalid filename.")
-            return
-        
-        with open(os.path.join(routesFolder,filename)) as fh:
-            a = json.load(fh)
-        self.write(json.dumps(a) )
-        end = time.time()
-        logmessage("loadJson GET call took {} seconds.".format(round(end-start,2)))
 
     def post(self):
         # /API/loadJson?route=filename&key=key
@@ -69,7 +55,7 @@ class loadJson(tornado.web.RequestHandler):
         self.write(saveStatus)
         end = time.time()
         logmessage("loadJson POST call (to save a route) took {} seconds.".format(round(end-start,2)))
-
+        logUse('saveRoute','write')
 
 class GPXUpload(tornado.web.RequestHandler):
     def post(self):
@@ -91,7 +77,7 @@ class GPXUpload(tornado.web.RequestHandler):
         self.write(returnJson)
         end = time.time()
         logmessage("GPXUpload POST call took {} seconds.".format(round(end-start,2)))
-
+        logUse('gpx','read')
 
 class routeSuggest(tornado.web.RequestHandler):
     def get(self):
@@ -117,6 +103,7 @@ class routeSuggest(tornado.web.RequestHandler):
         self.write(status)
         end = time.time()
         logmessage("routeSuggest GET call took {} seconds.".format(round(end-start,2)))
+        logUse('routeSuggest','write')
 
 class routeLock(tornado.web.RequestHandler):
     def get(self):
@@ -140,6 +127,7 @@ class routeLock(tornado.web.RequestHandler):
         self.write(status)
         end = time.time()
         logmessage("routeLock GET call took {} seconds.".format(round(end-start,2)))
+        logUse('lockRoute','write')
 
 class bulkSuggest(tornado.web.RequestHandler):
     def get(self):
@@ -191,6 +179,7 @@ class bulkSuggest(tornado.web.RequestHandler):
         self.write('<br>'.join(returnMessages))
         end = time.time()
         logmessage("bulkSuggest GET call took {} seconds.".format(round(end-start,2)))
+        logUse('bulkRouteSuggest','bulk')
 
 class keyCheck(tornado.web.RequestHandler):
     def get(self):
@@ -209,30 +198,7 @@ class keyCheck(tornado.web.RequestHandler):
         end = time.time()
         logmessage("keyCheck GET call took {} seconds.".format(round(end-start,2)))
 
-class catchJumpers(tornado.web.RequestHandler):
-    def get(self):
-        # /API/catchJumpers?route=filename&key=${globalApiKey}&dryRun=n
-        start = time.time()
 
-        key = self.get_argument('key',default='')
-        if not checkAccess(key,'ADMIN'):
-            self.set_status(400)
-            self.write("Error: Need Admin level API Key.")
-            return
-
-        route = self.get_argument('route',default='')
-        if not route:
-            self.set_status(400)
-            self.write("Error: Need valid route.")
-            return
-        
-        dryRun = not ( self.get_argument('dryRun',default='y') == 'n' )
-
-        returnMessage = sanityFunc(route,key,dryRun)
-
-        self.write(returnMessage)
-        end = time.time()
-        logmessage("catchJumpers GET call for route {} took {} seconds.".format(route,round(end-start,2)))
 
 class routeEntry(tornado.web.RequestHandler):
     def post(self):
@@ -258,19 +224,21 @@ class routeEntry(tornado.web.RequestHandler):
         self.write(returnMessage)
         end = time.time()
         logmessage("routeEntry POST call for route {} took {} seconds.".format(route,round(end-start,2)))
+        logUse('saveRouteDataEntry','write')
 
 class reconcile(tornado.web.RequestHandler):
     def post(self):
         # /API/reconcile?key=${globalApiKey}
         start = time.time()
+        mode = self.get_argument('mode',default='')
+        requiredLevel = 'REVIEW' if mode=='unmapped' else  'ADMIN'
         key = self.get_argument('key',default='')
-        if not checkAccess(key,'ADMIN'):
+        if not checkAccess(key,requiredLevel):
             self.set_status(400)
-            self.write("Error: Need ADMIN level API Key.")
+            self.write("Error: Need {} level API Key.".format(requiredLevel))
             return
         data = json.loads( self.request.body.decode('UTF-8'), object_pairs_hook=OrderedDict )
-        
-        logmessage(json.dumps(data,indent=2))
+        # logmessage(json.dumps(data,indent=2)) # to see what the incoming data looks like
 
         returnList = []
         recon_stop_name = data.get('recon_stop_name')
@@ -292,6 +260,8 @@ class reconcile(tornado.web.RequestHandler):
         self.write('<br>'.join(returnList) )
         end = time.time()
         logmessage("reconcile POST call took {} seconds.".format(round(end-start,2)))
+        logUse('reconcile','bulk')
+
         comment = ''' # this is what a standard json object received in this API call looks like:
         {
             "recon_stop_name": "Basheer Bagh",
@@ -353,7 +323,7 @@ class getRouteLine(tornado.web.RequestHandler):
         self.write(json.dumps(returnContent)) # send it in json format
         end = time.time()
         logmessage("getRouteLine GET call for {}/{}:{} took {} seconds.".format(folder,jsonFile,direction_id,round(end-start,2)))
-
+        logUse('getRouteLine','read')
 
 class removeAutoMappingAPI(tornado.web.RequestHandler):
     def get(self):
@@ -373,7 +343,8 @@ class removeAutoMappingAPI(tornado.web.RequestHandler):
         self.write('<br>'.join(returnList) )
         end = time.time()
         logmessage("removeAutoMappingAPI GET call took {} seconds.".format(round(end-start,2)))
-
+        logUse('removeAutoMapping','bulk')
+        
 class timings(tornado.web.RequestHandler):
     def post(self):
         # /API/timings?key=${globalApiKey}&route=${globalRoute}
@@ -398,6 +369,7 @@ class timings(tornado.web.RequestHandler):
         self.write(returnStatus)
         end = time.time()
         logmessage("timings POST call took {} seconds.".format(round(end-start,2)))
+        logUse('saveRouteTimings','write')
 
 class unLock(tornado.web.RequestHandler):
      def get(self):
@@ -421,7 +393,7 @@ class unLock(tornado.web.RequestHandler):
         self.write(status)
         end = time.time()
         logmessage("unLock GET call took {} seconds.".format(round(end-start,2)))
-
+        logUse('unLockRoute','write')
         
 #################################
 
@@ -432,6 +404,7 @@ class MyStaticFileHandler(tornado.web.StaticFileHandler):
         if any([absolute_path.endswith(x) for x in forbiddenEndings]) or any([ (x in absolute_path) for x in forbiddenPaths]):
             # raise tornado.web.HTTPError(403) # this is the usual thing: raise 403 Forbidden error. But instead..
             # self.write('YOU SHALL NOT PASS!')
+            logUse('forbidden','hack')
             return os.path.join(root,'lib','errorpage.txt')
         
         if absolute_path.endswith('favicon.ico'):
@@ -439,6 +412,9 @@ class MyStaticFileHandler(tornado.web.StaticFileHandler):
             return os.path.join(root,'lib','favicon.ico')
 
         return super().validate_absolute_path(root, absolute_path) # you may pass
+
+###################################
+# CODE GRAVEYARD:
 
 '''
 discard; load csv on js side using papa.parse
@@ -485,4 +461,48 @@ class getDatabank(tornado.web.RequestHandler):
         self.write(rightJson)
         end = time.time()
         logmessage("getDatabank GET call took {} seconds.".format(round(end-start,2)))
-'''
+
+class catchJumpers(tornado.web.RequestHandler):
+    def get(self):
+        # /API/catchJumpers?route=filename&key=${globalApiKey}&dryRun=n
+        start = time.time()
+
+        key = self.get_argument('key',default='')
+        if not checkAccess(key,'ADMIN'):
+            self.set_status(400)
+            self.write("Error: Need Admin level API Key.")
+            return
+
+        route = self.get_argument('route',default='')
+        if not route:
+            self.set_status(400)
+            self.write("Error: Need valid route.")
+            return
+        
+        dryRun = not ( self.get_argument('dryRun',default='y') == 'n' )
+
+        returnMessage = sanityFunc(route,key,dryRun)
+
+        self.write(returnMessage)
+        end = time.time()
+        logmessage("catchJumpers GET call for route {} took {} seconds.".format(route,round(end-start,2)))
+
+
+
+    def get(self):
+        # /API/loadJson?route=filename
+        start = time.time()
+        filename = self.get_argument('route',default='')
+        logmessage(filename)
+        if not filename or not os.path.exists(os.path.join(routesFolder,filename)):
+            self.set_status(400)
+            self.write("Error: invalid filename.")
+            return
+        
+        with open(os.path.join(routesFolder,filename)) as fh:
+            a = json.load(fh)
+        self.write(json.dumps(a) )
+        end = time.time()
+        logmessage("loadJson GET call took {} seconds.".format(round(end-start,2)))
+
+    '''

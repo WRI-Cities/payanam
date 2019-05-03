@@ -1,7 +1,9 @@
-jellyfish==0.7.1
-Shapely==1.6.4.post2
-xmltodict==0.12.0
-pandas==0.24.2
-numpy==1.16.3
 tornado==5.1.1
 geojson==2.4.1
+jellyfish==0.7.1
+Shapely==1.6.4.post2
+pandas==0.24.2
+fuzzywuzzy==0.17.0
+numpy==1.16.3
+requests==2.21.0
+xmltodict==0.12.0

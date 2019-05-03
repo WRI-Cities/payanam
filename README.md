@@ -40,7 +40,7 @@ Initially deployed on https://server.nikhilvj.co.in/payanam/
 ```
 
 - Cron tips:
-- - Ensure that the user account has write acess to the payanam folder
+- - Ensure that the user account has write access to the payanam folder
 - - Use absolute paths in all things cron.
 - - You can redirect the stdout and stderr outputs to other log files or to `/dev/null` (aka the black hole); these files are logging everything to `reports/logs/log.txt` anyways.
 

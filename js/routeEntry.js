@@ -180,13 +180,6 @@ function loadJson(route_id) {
 	clearEverything(loaderText='loading...');
 	console.log('loadJson:',route_id)
 	
-	//$('#routeName').val('loading..');
-	/*
-	$.get( `${APIpath}loadJson?route=${route_id}`, function( data ) {
-		console.log('loadJson GET call successful for',route_id);
-		jsondata = JSON.parse(data);
-		//console.log(jsondata);
-	*/
 	$.getJSON(`routes/${route_id}`, function(jsondata) {
 		clearEverything();
 
@@ -200,13 +193,6 @@ function loadJson(route_id) {
 		$('#busType').val(jsondata['busType']);
 		$('#extra0').val(jsondata['extra0']);
 		$('#extra1').val(jsondata['extra1']);
-
-		//$('#timings0').val(jsondata['timings0']);
-		//$('#timings1').val(jsondata['timings1']);
-		//$('#timingsWeekend0').val(jsondata['timingsWeekend0']);
-		//$('#timingsWeekend1').val(jsondata['timingsWeekend1']);
-		//$('#freq0').val(jsondata['freq0']);
-		//$('#freq1').val(jsondata['freq1']);
 
 		// 8.12.18: Intervention : Check if stopsArray keys are present and having length:
 		if( jsondata['stopsArray0'] instanceof Array) {

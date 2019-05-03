@@ -21,7 +21,9 @@ import tornado.ioloop, tornado.web
 
 # for fuzzy search
 import jellyfish as jf
-# from fuzzywuzzy import fuzz 
+
+import requests, platform # used to log user stats
+requests.packages.urllib3.disable_warnings() # suppress warning messages like "InsecureRequestWarning: Unverified HTTPS request is being made." from https://stackoverflow.com/a/44850849/4355695
 
 # setting constants
 root = os.path.dirname(__file__) # needed for tornado and all other paths, prog should work even if called from other working directory.
@@ -68,7 +70,7 @@ def make_app():
         (r"/API/routeLock", routeLock),
         (r"/API/bulkSuggest", bulkSuggest),
         (r"/API/keyCheck", keyCheck),
-        (r"/API/catchJumpers", catchJumpers),
+        # (r"/API/catchJumpers", catchJumpers),
         (r"/API/routeEntry", routeEntry),
         (r"/API/reconcile", reconcile),
         (r"/API/getRouteLine", getRouteLine),

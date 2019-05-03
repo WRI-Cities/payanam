@@ -354,7 +354,7 @@ function mapStops(normal=true) {
 		};
 
 		var automappedFlag = '';
-		console.log('confidence:',stoprow.confidence)
+		// console.log('confidence:',stoprow.confidence)
 		if( normal && stoprow.confidence == '0') automappedFlag = '&nbsp;&nbsp;(automapped)';
 		var tooltipContent = `${stoprow.sr}:${stoprow.depot}/${stoprow.routeName}${automappedFlag}<br>${stoprow.stop_name}`;
 		var stopmarker = L.circleMarker([lat,lon], circleMarkerOptions).bindTooltip(tooltipContent);
@@ -488,11 +488,12 @@ function reconcileSubmit() {
 		$('#reconcileStatus').html('<p class="alert alert-danger">All data not present; Please make sure everything is properly filled out before proceeding.</p>');
 		return;
 	}
-
+	var mode = $('#chooseMode').val();
+	console.log('mode:',mode);
 	$('#reconcileStatus').html('Reconciling...');
 
 	$.ajax({
-		url : `${APIpath}reconcile?key=${globalApiKey}`,
+		url : `${APIpath}reconcile?mode=${mode}&key=${globalApiKey}`,
 		type : 'POST',
 		data : JSON.stringify(data),
 		cache: false,

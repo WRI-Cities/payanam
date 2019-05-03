@@ -444,13 +444,10 @@ function loadRoute(firstTime=true) {
 	$('#routeStatus').html('loading..');
 	$('#routeSaveStatus').html('');
 	$('#routeLockStatus').html('');
-	//$('#routeSuggestStatus').html('');
-
 
 	if(firstTime) globalRoute = $("#routeSelect").val();
 	console.log(globalRoute);
 
-	//$.get( `${APIpath}loadJson?route=${globalRoute}`, function( response ) {
 	// 12.2.18 : intervention : we're loading the whole json file's content anyways. Why not just do directly from JS?
 	// Doing that, but to prevent browser from using old version of file in cache, need to put one command in document.ready block. See https://stackoverflow.com/a/13679534/4355695 . Have put it in common.js .
 	$.getJSON(`routes/${globalRoute}`, function(data) {
@@ -522,9 +519,6 @@ function saveRoute() {
 
 	$('#routeSaveStatus').html('Saving...');
 	
-	//pw = prompt('Please provide a Mapper level password.');
-	// using globalApiKey now
-
 	$.ajax({
 		url : `${APIpath}loadJson?route=${globalRoute}&key=${globalApiKey}`,
 		type : 'POST',

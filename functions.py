@@ -247,11 +247,8 @@ def routeLockFunc(filename, key):
         routeD['changes'] = changes
     
     dstdir =  os.path.join(lockFolder, os.path.dirname(filename))
-    try:
-        os.makedirs(dstdir)
-    except FileExistsError:
-        pass
-    
+    os.makedirs(dstdir, exist_ok=True)
+
     json.dump(routeD, open(os.path.join(lockFolder,filename), 'w'), indent=2)
     logmessage('routeLockFunc: Wrote {} to locked folder'.format(filename))
     
@@ -942,6 +939,35 @@ def unLockFunc(filename,key):
         logmessage(e)
 
     return '{} moved to routes folder.'.format(filename)
+
+
+def logUse(action='launch',type='visitor'):
+    comment='''
+    have shared this online with more explanation. See https://gist.github.com/answerquest/1cee6b567644dfe9c4449979b9aaa2db
+    values for type : 
+        visitor: normal page views
+        read: if specific route loaded etc
+        write: changes made to single route
+        bulk: bulk actions
+    '''
+    payload = {'idsite': 6,  'rec': 1, 'send_image':0}
+    payload['action_name'] = action
+    cvar = {}
+    cvar['1'] = ['type', type]
+    cvar['2'] = ['OS', platform.system()]
+    cvar['3'] = ['processor',platform.processor()]
+    if cvar['2'][1] == 'Linux':
+        cvar['2'][1] = platform.linux_distribution()[0]
+        cvar['4'] = ['version', platform.linux_distribution()[1] ]
+    else:
+        cvar['4'] = ['version', platform.release() ]
+    payload['_cvar'] = json.dumps(cvar)
+    try:
+        r = requests.get('https://nikhilvj.co.in/tracking/piwik.php', params=payload, verify=False, timeout=1)
+    except requests.exceptions.RequestException as e:
+        # print('exception',e)
+        pass
+
 ## GRAVEYARD
 
 '''

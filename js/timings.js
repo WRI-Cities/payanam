@@ -104,7 +104,7 @@ function loadJson() {
             if(a['trip_times'].length) {
                 $(`${dirclass} .trip_times`).val(a['trip_times'].join(', '));
                 timingsFlag = true;
-                console.log("says there are timings.");
+                console.log("There are timings.");
             }
             if(a[`first_trip_start`]) $(`${dirclass} .first_trip_start`).val(a[`first_trip_start`]);
             if(a[`last_trip_start`]) $(`${dirclass} .last_trip_start`).val(a[`last_trip_start`]);
@@ -211,6 +211,11 @@ function cleanTime(timeStr) {
         clean1 = '';
     }
     return clean1;
+}
+
+function trip_times_copy() {
+    let cleanTimes = cleanList($('.onward .trip_times').val());
+    $('.trip_times').val(cleanTimes);
 }
 
 function frequency_copy() {
