@@ -131,7 +131,7 @@ class routeLock(tornado.web.RequestHandler):
 
 class bulkSuggest(tornado.web.RequestHandler):
     def get(self):
-        # /API/bulkSuggest?mapFirst=${mapFirst}&suggestManual=${suggestManual}&mapAgain=${mapAgain}&jumpers=${jumpers}&key=${globalApiKey}
+        # /API/bulkSuggest?mapFirst=${mapFirst}&suggestManual=${suggestManual}&mapAgain=${mapAgain}&jumpers=${jumpers}&depot=${depot}&key=${globalApiKey}
         start = time.time()
 
         key = self.get_argument('key',default='')
@@ -146,6 +146,7 @@ class bulkSuggest(tornado.web.RequestHandler):
         fuzzy = ( self.get_argument('fuzzy',default='n') == 'y' )
         jumpers = ( self.get_argument('jumpers',default='n') == 'y' )
         dryRun = not ( self.get_argument('dryRun',default='y') == 'n' )
+        depot = self.get_argument('depot',default='')
         # skipEmpty = ( self.get_argument('skipEmpty',default='n') == 'y' )
 
 
@@ -156,9 +157,10 @@ class bulkSuggest(tornado.web.RequestHandler):
         logmessage('fuzzy:',fuzzy)
         logmessage('jumpers:',jumpers)
         logmessage('dryRun (for removing jumpers):',dryRun)
+        logmessage('depot:',depot)
         # logmessage('skipEmpty:',skipEmpty)
         
-        routesList = getallRoutes()
+        routesList = getallRoutes() # returns a list like ['CNT/1.json','BDG/2.json'...]
 
         dfMapped=loadMappedStops()
         dfDataBank=loadDataBank()
@@ -167,6 +169,8 @@ class bulkSuggest(tornado.web.RequestHandler):
         for filename in routesList:
 
             if filename.endswith('unmapped.json'): continue # want to skip bulk-mapping for this one.
+            # 5.5.19 : intervention : depot-restriction
+            if len(depot) and (not filename.startswith(depot)): continue # if a depot is specified, don't run
             
             status = routeSuggestFunc(filename=filename, dfMapped=dfMapped, dfDataBank=dfDataBank, mapFirst=mapFirst, suggestManual=suggestManual, mapAgain=mapAgain, fuzzy=fuzzy, key=key)
             returnMessages.append( status )
@@ -394,7 +398,24 @@ class unLock(tornado.web.RequestHandler):
         end = time.time()
         logmessage("unLock GET call took {} seconds.".format(round(end-start,2)))
         logUse('unLockRoute','write')
-        
+
+
+class depotsList(tornado.web.RequestHandler):
+    def get(self):
+        # /API/depotsList optional parameter: [?which=locked]
+        start = time.time()
+        which = self.get_argument('which',default='')
+
+        returnContent = depotsListFunc()
+
+        self.write(returnContent)
+        end = time.time()
+        logmessage("depotsList GET call took {} seconds.".format(round(end-start,2)))
+        logUse('depotsList')
+
+
+
+
 #################################
 
 # 21.4.19

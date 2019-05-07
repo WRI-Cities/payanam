@@ -82,14 +82,6 @@ var stopsTable = new Tabulator("#stopsTable", {
         {title:"jsonFile", field:"jsonFile", headerFilter:"input", headerTooltip:"jsonFile", width:80, headerSort:false },
         {title:"depot", field:"depot", headerFilter:"input", headerTooltip:"depot", width:50, headerSort:false },
 		{title:"direction_id", field:"direction_id", headerFilter:"input", headerTooltip:"direction_id", width:50, headerSort:false },
-		/* nooooo too much power!!
-		{title: "map", formatter:printIcon, width:40, align:"center", cellClick:function(e, cell){
-            let row = cell.getRow().getData();
-			drawLine(row.folder,row.jsonFile,row.direction_id);
-			// let jumpRoute = `${row['folder']}/${row['jsonFile']}`;
-            // var win = window.open(`routeMap.html?route=${jumpRoute}`, '_blank');
-            // win.focus();
-        }}, */
         {title:"stop_lat", field:"stop_lat", headerFilter:"input", headerTooltip:"stop_lat", width:70, headerSort:true },
         {title:"stop_lon", field:"stop_lon", headerFilter:"input", headerTooltip:"stop_lon", width:70, headerSort:true },
         {title:"confidence", field:"confidence", headerFilter:"input", headerTooltip:"confidence", width:50, headerSort:true },

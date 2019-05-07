@@ -40,11 +40,14 @@ body {
 <br>
 <h3>Bulk Auto-suggest / Auto-Map</h3>
 <p><button onclick="bulk()" class="btn btn-warning">Bulk auto-suggest for all unmapped stops in all routes</button> <br>Options:<br>
-<label>1. <input type="checkbox" id="mapFirst"> Also take the topmost suggestion and map it.</label><br>
+<label>1. <input type="checkbox" id="mapFirst"> Also take the topmost suggestion and map it <small>(does not apply to manually mapped stops)</small>.</label><br>
 <label>2. <input type="checkbox" id="suggestManual"> Compute suggestions for already manually mapped stops.</label><br>
 <label>3. <input type="checkbox" id="mapAgain"> Re-do (suggestion and/or mapping) for already auto-mapped stops.</label><br>
 <label>4. <input type="checkbox" id="fuzzy"> Do Fuzzy search instead of direct matching.</label><br>
-<label>5. <input type="checkbox" id="jumpers"> Perform sanity check and catch stops jumping too far from rest of route.</label> | <label><input type="checkbox" id="dryRun" checked> Dry Run.</label><br>
+<label>5. <input type="checkbox" id="jumpers"> Perform sanity check and catch stops jumping too far from rest of route.</label> | 
+<label><input type="checkbox" id="dryRun" checked> Dry Run.</label><br>
+6. Choose a depot if you want to restrict this exercise to only that depot: <select id="depotSelect"><option value="">Loading..</option></select><br>
+
 <div id="bulkStatus"></div>
 </p>
 <p><b>Important:</b>
@@ -91,7 +94,7 @@ Note: This page's buttons only work for API keys that have admin access. Others 
 <script>
 function bulk() {
     var mapFirstOption = document.querySelector('#mapFirst').checked;
-    console.log(mapFirstOption);
+    console.log("mapFirstOption:", mapFirstOption);
 
     var mapFirst = 'n';
     if(mapFirstOption) mapFirst = 'y';
@@ -111,6 +114,8 @@ function bulk() {
     var dryRun = 'n';
     if(document.querySelector('#dryRun').checked) dryRun = 'y';
 
+    var depot = $('#depotSelect').val();
+    
     console.log('Options:');
     console.log('mapFirst:',mapFirst);
     console.log('suggestManual:',suggestManual);
@@ -118,13 +123,14 @@ function bulk() {
     console.log('fuzzy:',fuzzy);
     console.log('jumpers:',jumpers);
     console.log('dryRun:',dryRun);
+    console.log(`depot: "${depot}"`);
 
     if(!confirm(`Are you sure you want to do this?\nAnd FYI you have set the auto-mapping option to: ${mapFirst}.`) ) return;
     
     // let pw = prompt('Please enter Admin level password:');
     $('#bulkStatus').html(`<div class="alert alert-warning">Processing.. This will probably go into error in some mins on the front page, but the function will be on at backend. See "tail -f payanam/logs/log.txt" on ssh.</div>`);
     
-    $.get( `${APIpath}bulkSuggest?mapFirst=${mapFirst}&suggestManual=${suggestManual}&mapAgain=${mapAgain}&fuzzy=${fuzzy}&jumpers=${jumpers}&dryRun=${dryRun}&key=${globalApiKey}`, function( response ) {
+    $.get( `${APIpath}bulkSuggest?mapFirst=${mapFirst}&suggestManual=${suggestManual}&mapAgain=${mapAgain}&fuzzy=${fuzzy}&jumpers=${jumpers}&dryRun=${dryRun}&depot=${depot}&key=${globalApiKey}`, function( response ) {
         $('#bulkStatus').html(`<p class="alert alert-success">${response}</p>`);
     }).fail(function(err) {
 		$('#bulkStatus').html(`<p class="alert alert-danger">${err.responseText}</p>`);
@@ -178,11 +184,20 @@ function unLock() {
 	});
 
 }
+
+function loadDepots() {
+    $.get( `${APIpath}depotsList`, function( data ) {
+		//console.log(data);
+        $('#depotSelect').html(data);
+    });
+}
 // ########################
 // RUN ON PAGE LOAD
 $(document).ready(function() {
     //checkCookie();
     loadRoutesList();
+    loadDefaults();
+    loadDepots();
 });
 
 

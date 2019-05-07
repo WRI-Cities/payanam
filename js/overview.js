@@ -26,11 +26,6 @@ var progressbar = {
 };
 
 //custom formatter definition : moved to common.js
-/*
-var printIcon = function(cell, formatterParams, onRendered){ //plain text value
-    return `<img src="lib/route.svg" height="20" width="20">`;
-};
-*/
 
 var routes_tabulator = new Tabulator("#routes", {
     height: routes_height,
@@ -42,27 +37,34 @@ var routes_tabulator = new Tabulator("#routes", {
     columns:[
         {title:"sr", field:"sr", headerFilter:"input", headerTooltip:"serial number", width:15, headerSort:true, frozen:true },
         {title:"depot", field:"depot", headerFilter:"input", headerTooltip:"depot", width:75, headerSort:true },
-        {title:"jsonFile", field:"jsonFile", headerFilter:"input", headerTooltip:"jsonFile", width:140, headerSort:true, bottomCalc:routesTotal },
-        {title:"% mapped total", field:"mapped%total", headerFilter:"input", headerTooltip:"mapped%total", width:70, headerSort:true, headerVertical:true, formatter:"progress", formatterParams: progressbar },
-        {title:"avg confidence", field:"avgConfidence", headerFilter:"input", headerTooltip:"avg confidence", width:70, headerSort:true, headerVertical:true },
-        {title:"% autoMapped", field:"autoMapped%", headerFilter:"input", headerTooltip:"autoMapped%", width:70, headerSort:true, headerVertical:true, formatter:"progress", formatterParams: progressbar },
-        {title:"% manually", field:"manuallyMapped%", headerFilter:"input", headerTooltip:"manuallyMapped%", width:70, headerSort:true, headerVertical:true, formatter:"progress", formatterParams: progressbar },
-        {title:"hull", field:"hull", headerFilter:"input", headerTooltip:"higher number indicates there may be mis-mapped stops in the route", width:70, headerSort:true, headerVertical:true },
+        {title:"route<br>Name", field:"routeName", headerFilter:"input", headerTooltip:"routeName", width:100, headerSort:true, headerVertical:false, bottomCalc:routesTotal },
+        {title:"Mapped %", field:"mapped%total", headerFilter:"input", headerTooltip:"mapped%total", width:70, headerSort:true, headerVertical:true, formatter:"progress", formatterParams: progressbar },
+
         // icon : jump to routeMap.html with URL params
-        {title: "map", formatter:printIcon, width:40, align:"center", cellClick:function(e, cell){
+        {title: "Edit Map", formatter:routeMapperIcon, width:40, align:"center", headerVertical:true, cellClick:function(e, cell){
             let row = cell.getRow().getData();
             let jumpRoute = `${row['folder']}/${row['jsonFile']}`;
             var win = window.open(`routeMap.html?route=${jumpRoute}`, '_blank');
             win.focus();
         }},
-        {title:"len", field:"len", headerFilter:"input", headerTooltip:"number of stops (both directions)", width:50, headerSort:true },
-        {title:"timings", field:"timings", headerFilter:"input", headerTooltip:"if route has trips ", width:50, headerSort:false, formatter:"tickCross", formatterParams:{crossElement:false} },
-        {title:"freq", field:"frequency", headerFilter:"input", headerTooltip:"if route has frequency", width:50, headerSort:false,formatter:"tickCross", formatterParams:{crossElement:false} },
-
+        {title: "Edit Timings", formatter:clockIcon, width:40, align:"center", headerVertical:true, cellClick:function(e, cell){
+            let row = cell.getRow().getData();
+            let jumpRoute = `${row['folder']}/${row['jsonFile']}`;
+            var win = window.open(`timings.html?route=${jumpRoute}`, '_blank');
+            win.focus();
+        }},
+        {title:"Number<br>of Stops", field:"len", headerFilter:"input", headerTooltip:"number of stops (both directions)", width:55, headerSort:true,headerVertical:true },
+        //{title:"trip times", field:"timings", headerTooltip:"if route has trips", width:50, headerSort:false, headerVertical:true, formatter:"tickCross", formatterParams:{crossElement:false} },
+        {title:"Trip Times", field:"timings", headerTooltip:"if route has trips", width:50, headerSort:true, headerVertical:true, formatter:tickIcon },
+        {title:"Frequency", field:"frequency", headerTooltip:"if route has frequency", width:50, headerSort:true, headerVertical:true,formatter:tickIcon },
+        // {title:"avg confidence", field:"avgConfidence", headerFilter:"input", headerTooltip:"avg confidence", width:70, headerSort:true, headerVertical:true },
+        // {title:"% autoMapped", field:"autoMapped%", headerFilter:"input", headerTooltip:"autoMapped%", width:70, headerSort:true, headerVertical:true, formatter:"progress", formatterParams: progressbar },
+        //{title:"% manually", field:"manuallyMapped%", headerFilter:"input", headerTooltip:"manuallyMapped%", width:70, headerSort:true, headerVertical:true, formatter:"progress", formatterParams: progressbar },
+        //{title:"hull", field:"hull", headerFilter:"input", headerTooltip:"higher number indicates there may be mis-mapped stops in the route", width:70, headerSort:true, headerVertical:true },
         //{title:"% onward", field:"mapped%0", headerFilter:"input", headerTooltip:"mapped%0", width:70, headerSort:true, headerVertical:true },
         //{title:"% return", field:"mapped%1", headerFilter:"input", headerTooltip:"mapped%1", width:70, headerSort:true, headerVertical:true },
-        {title:"route Name", field:"routeName", headerFilter:"input", headerTooltip:"routeName", width:100, headerSort:true, headerVertical:true },
-        {title:"bus Type", field:"busType", headerFilter:"input", headerTooltip:"busType", width:60, headerSort:true, headerVertical:true },
+        //{title:"bus Type", field:"busType", headerFilter:"input", headerTooltip:"busType", width:60, headerSort:true, headerVertical:true },
+        // {title:"jsonFile", field:"jsonFile", headerFilter:"input", headerTooltip:"jsonFile", width:140, headerSort:true },
     ],
     rowSelected:function(row){ //when a row is selected
         let stuff = row.getData();
@@ -105,6 +107,52 @@ L.control.custom({
 $(document).ready(function() {
     loadDefaults();
     loadRoutes();
+
+    $('#autoMapped').on('change', e => {
+        if(e.target.checked) {
+            let col = {title:"% Auto-<br>Mapped", field:"autoMapped%", headerFilter:"input", headerTooltip:"autoMapped%", width:50, headerSort:true, headerVertical:true, formatter:"progress", formatterParams: progressbar };
+            routes_tabulator.addColumn(col, false);
+        } else {
+            routes_tabulator.deleteColumn("autoMapped%"); // use the field, luke, use the field!
+        }
+    });
+
+    $('#manuallyMapped').on('change', e => {
+        if(e.target.checked) {
+            let col = {title:"% Manually<br>Mapped", field:"manuallyMapped%", headerFilter:"input", headerTooltip:"manuallyMapped%", width:50, headerSort:true, headerVertical:true, formatter:"progress", formatterParams: progressbar };
+            routes_tabulator.addColumn(col, false);
+        } else {
+            routes_tabulator.deleteColumn("manuallyMapped%"); // use the field, luke, use the field!
+        }
+    });
+
+    $('#hull').on('change', e => {
+        if(e.target.checked) {
+            let col = {title:"Convex<br> &nbsp; Hull", field:"hull", headerFilter:"input", headerTooltip:"higher number indicates there may be mis-mapped stops in the route", width:50, headerSort:true, headerVertical:true };
+            routes_tabulator.addColumn(col, false);
+        } else {
+            routes_tabulator.deleteColumn("hull"); // use the field, luke, use the field!
+        }
+    });
+
+    $('#filename').on('change', e => {
+        if(e.target.checked) {
+            let col = {title:"filename", field:"jsonFile", headerFilter:"input", headerTooltip:"jsonFile", width:120, headerSort:true };
+            routes_tabulator.addColumn(col, false);
+        } else {
+            routes_tabulator.deleteColumn("jsonFile"); // use the field, luke, use the field!
+        }
+    });
+
+    $('#busType').on('change', e => {
+        if(e.target.checked) {
+            let col = {title:"Bus<br>Type", field:"busType", headerFilter:"input", headerTooltip:"busType", width:80, headerSort:true, headerVertical:false };
+            routes_tabulator.addColumn(col, false);
+        } else {
+            routes_tabulator.deleteColumn("busType"); // use the field, luke, use the field!
+        }
+    });
+
 });
 
 
@@ -119,6 +167,7 @@ function drawLine(folder,jsonFile,direction_id="0") {
             $('#mapStatus').html('No lat-longs available for this route.');
             return;
         }
+        lineLayer.clearLayers(); // clear me baby one more time
         var routeLine = L.polyline.antPath(data, {color: 'red', weight:4, delay:1000, interactive:false }).addTo(lineLayer);
         if (!map.hasLayer(lineLayer)) map.addLayer(lineLayer);
         map.fitBounds(lineLayer.getBounds(), {padding:[0,0], maxZoom:15});
@@ -157,7 +206,6 @@ function loadRoutes(which='progress') {
                 row['timings']=timeFlag;
                 row['frequency']=freqFlag;
             });
-            console.log(results.data);
             routes_tabulator.setData(results.data);
             $('#status').html(`Loaded ${filename}.<br>
                 <a href="reports/${filename}">Click to download</a>`);

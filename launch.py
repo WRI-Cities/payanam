@@ -48,7 +48,8 @@ forbiddenEndings = ['.py','access.csv']
 debugMode = False # using this flag at various places to do or not do things based on whether we're in development or production
 
 try:
-    configRules = json.load(open(os.path.join(configFolder,configFile)))
+    configRules = json.load(open(os.path.join(configFolder,configFile)), object_pairs_hook=OrderedDict)
+    # hey gotta load this is as OrderedDict
 except FileNotFoundError:
     configRules = {}
 
@@ -77,6 +78,7 @@ def make_app():
         (r"/API/removeAutoMappingAPI", removeAutoMappingAPI),
         (r"/API/timings", timings),
         (r"/API/unLock", unLock),
+        (r"/API/depotsList", depotsList),
         #(r"/API/allStops", allStops),
         # (r"/(.*)", tornado.web.StaticFileHandler, {"path": root, "default_filename": startPage})
         (r"/(.*)", MyStaticFileHandler, {"path": root, "default_filename": startPage})

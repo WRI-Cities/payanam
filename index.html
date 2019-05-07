@@ -50,12 +50,18 @@ body {
 
 .divOnMap1 {
 	padding: 10px;
-	background: rgba(255, 255, 255, 0.2);
+	background: rgba(255, 255, 255, 0.6);
 	/*font-size: 14px;*/
     border-radius: 5px;
 	box-shadow:0px 0px 5px black; 
 }
 
+.greenTick {
+    color: green;
+    font-size: 2em;
+    line-height: 0.5em;
+    
+}
 </style>
 
 </head>
@@ -64,7 +70,7 @@ body {
 <div class="container-fluid">
 <div class="row">
 <div class="col-md-6">
-<big>Routes Overview</big> 
+    <big><big>Routes Overview</big> </big> 
 <button onclick="loadRoutes('progress')" class="btn btn-outline-primary btn-sm">Load routes<br>in progress</button>  
 <button onclick="loadRoutes('locked')" class="btn btn-outline-success btn-sm">Load locked<br>routes</button>  
 <button onclick="loadRoutes('all')" class="btn btn-outline-warning btn-sm">Load all <br>routes</button>  
@@ -80,17 +86,34 @@ body {
 </div>
 
 <div class="row">
-<div class="col-md-8 nopad">
+<div class="col-md-7 nopad">
     <div id="routes"></div>
-</div><div class="col-md-4 nopad">
+</div><div class="col-md-5 nopad">
     
     <div id="map"></div>
 </div></div>
 <br>
-<p>Notes:<br>
+
+<div class="row">
+<div class="col-md-8">
+    <h5>Toggle more columns:</h5>
+    <label><input type="checkbox" id="autoMapped"> % automapped</label> | 
+    <label><input type="checkbox" id="manuallyMapped"> % manually mapped</label> | 
+    <label><input type="checkbox" id="hull"> convex hull area</label> | 
+    <label><input type="checkbox" id="filename"> filename</label> | 
+    <label><input type="checkbox" id="busType"> bus type</label> | 
+</div>
+<div class="col-md-4">
+<small>
+<p class="alert alert-warning">Notes:<br>
 - Color bars : If less than 50%, yellow. If more, blue.<br>
 - "hull" column : A geometric value of the extent of map area occupied by a route, calculated using Convex Hull algorithm.</p>
+</small>
+</div>
+</div>    
 
+
+<br>
 <br>
 <p id="keyStatus"></p>
 </div>

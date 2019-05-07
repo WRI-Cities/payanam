@@ -31,11 +31,20 @@ var mapillaryLayer = new L.geoJson(null);
 var defaults = {};
 
 //tabulator custom formatter icon definition
-var printIcon = function(cell, formatterParams, onRendered){ return `<img src="lib/route.svg" height="20" width="20">`;
+var routeMapperIcon = function(cell, formatterParams, onRendered){ return `<img src="lib/route-blue.svg" height="20" width="20">`;
 };
 
 var unMapIcon = function(cell, formatterParams, onRendered){ 
     return `<img src="lib/un_map.svg" height="20" width="20">`;
+};
+
+var clockIcon = function(cell, formatterParams, onRendered){ 
+  return `<img src="lib/clock.png" height="20" width="20">`;
+};
+
+var tickIcon = function(cell, formatterParams, onRendered){ 
+  if(cell.getValue()) return `<span class="greenTick">&#10004;</font>`;
+  else return "";
 };
 
 // Leaflet map setup - common stuff

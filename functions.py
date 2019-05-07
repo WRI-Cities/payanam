@@ -131,7 +131,7 @@ def loadDataBank():
     return dfDataBank
 
 
-def routeSuggestFunc(filename, dfMapped=False, dfDataBank=False, mapFirst=False, suggestManual=False, mapAgain=False, fuzzy=False, key=False):
+def routeSuggestFunc(filename, dfMapped=[], dfDataBank=[], mapFirst=False, suggestManual=False, mapAgain=False, fuzzy=False, key=False):
     # def routeSuggestFunc(filename, options={}, key=False):
     '''
     this function will load a file, 
@@ -152,8 +152,8 @@ def routeSuggestFunc(filename, dfMapped=False, dfDataBank=False, mapFirst=False,
         return 'Hey! this file {} doesnt even exist!'.format(filename)
     
     # check and load banks
-    if not dfDataBank: dfDataBank=loadDataBank()
-    if not dfMapped: dfMapped=loadMappedStops()
+    if not len(dfDataBank): dfDataBank=loadDataBank()
+    if not len(dfMapped): dfMapped=loadMappedStops()
     logmessage('Lengths: databank:{}, stops_mapped:{}'.format(len(dfDataBank),len(dfMapped)))
     
     routeD = json.load(open(os.path.join(routesFolder,filename)), object_pairs_hook=OrderedDict)
@@ -202,7 +202,7 @@ def routeSuggestFunc(filename, dfMapped=False, dfDataBank=False, mapFirst=False,
                     stopRow['confidence'] = '0' # indicates it was auto-mapped
                     count += 1
     
-    logmessage(count,'stops mapped.',suggestionsCount,'stops given sugggestions.')
+    logmessage(count,'stops mapped,',suggestionsCount,'stops given sugggestions.')
     backup(os.path.join(routesFolder,filename))
     
     if key:
@@ -228,7 +228,7 @@ def routeSuggestFunc(filename, dfMapped=False, dfDataBank=False, mapFirst=False,
     else: 
         appendString = ''
     
-    return 'Added suggested locations for stop names in {}{}'.format(filename, appendString)
+    return '{} stops mapped, {} stops given sugggestions in {}{}'.format(count,suggestionsCount,filename, appendString)
 
 
 def routeLockFunc(filename, key):
@@ -967,6 +967,21 @@ def logUse(action='launch',type='visitor'):
     except requests.exceptions.RequestException as e:
         # print('exception',e)
         pass
+
+def depotsListFunc():
+    # from https://stackoverflow.com/a/3207973/4355695
+    d = []
+    for (dirpath, dirnames, filenames) in os.walk(routesFolder):
+        d.extend(dirnames)
+        break
+    logmessage(d)
+    content = '<option value="">(All - ignore this line)</option>'
+    for subfolder in d:
+        content+= '<option value="{}">{}</option>'.format(subfolder,subfolder)
+    
+    return content
+
+
 
 ## GRAVEYARD
 
