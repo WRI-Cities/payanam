@@ -13,7 +13,8 @@ import numpy as np
 from shapely.geometry import Polygon
 import geojson
 
-start = time.time()
+times = []
+times.append(time.time())
 # setting constants
 root = os.path.dirname(__file__) # needed for tornado and all other paths, prog should work even if called from other working directory.
 routesFolder = os.path.join(root,'routes')
@@ -84,6 +85,8 @@ routesCollector = []
 statsCollector = OrderedDict()
 
 def churnJsons(foldername):
+    global stopsCollector
+    global routesCollector
     for root, subdirs, files in os.walk(foldername):
         logmessage('\n',root)
         files = [x for x in files if x.endswith('.json')]
@@ -144,43 +147,50 @@ def churnJsons(foldername):
                     row['direction_id'] = direction_id
                     count+=1
                     row['stop_sequence'] = count
-                    row.update(stopRow) # name, lat, long, confidence, suggestions
+                    row.update(stopRow) # name, lat, long, confidence, suggested
+                    
+                    # 8.5.19: intervention: nix the suggestions
+                    row.pop('suggested',None)
                     
                     stopsCollector.append(row.copy())
 
-                    if row.get('stop_lat'):
-                        points.append([ float(stopRow.get('stop_lat') ),float(stopRow.get('stop_lon')) ])
+                    try:
+                        lat = float(stopRow.get('stop_lat',0))
+                        lon = float(stopRow.get('stop_lon',0))
+                        if lat and lon:
+                            points.append([ lat,lon ])
+                    except ValueError as e:
+                        pass
 
             # hull computation
             # from _find link!_
             # from https://stackoverflow.com/a/45734111/4355695
             if len(points) > 2:
                 hull = np.array(convex_hull(np.array(points)))
+                routeRow['hull'] = 0
                 if len(hull) >= 4:
                     # 26.2.19:
                     # Polygon calculation happens when the LinearRing supplied is of length >=4. Else it throws up an error. 
                     # A LinerRing has last point same as first point, which the hull func takes care of. 
-                    # So if the hull variable is having less than 3 points, it means there's only 2 points net, that makes a line, not a polygon.
+                    # So if the hull variable is <= 3 points, it means there's only 2 points net, that makes a line, not a polygon.
                     routeRow['hull'] = round( Polygon(hull).area * 10000 ,2)
-                else:
-                    routeRow['hull'] = 0
             else:
                 routeRow['hull'] = pd.np.NaN
             
-            logmessage('Added stops and route info for',root,file)
+            logmessage(root,file)
             routesCollector.append(routeRow.copy())
             
         # end of direction loop
     # end of working / locked folder loop
 # end of function, now actually execute it:
 
-stopsCollector = []
-routesCollector = []
+# stopsCollector = []
+# routesCollector = []
 churnJsons(routesFolder)
 churnJsons(lockFolder)
 
-endScan = time.time()
-logmessage("Scanning all routes done at {} seconds.".format(round(endScan-start,2)))
+times.append(time.time())
+logmessage("Scanning all routes took {} seconds.".format(round(times[-1]-times[-2],2)))
 
 df = pd.DataFrame(stopsCollector, dtype=str).fillna('')
 
@@ -189,6 +199,24 @@ df['zap'] = df['stop_name'].apply(zapper)
 
 # routePath:
 df['routePath'] = df.apply(lambda y: '{}/{}'.format(y['folder'],y['jsonFile']), axis=1 )
+
+# force lat,lon to floats: # NAAAAH!
+# df['stop_lat'] = pd.to_numeric(df['stop_lat'], errors='coerce')
+# df['stop_lon'] = pd.to_numeric(df['stop_lon'], errors='coerce')
+
+# lat and lon cols : get rid of all chars that aren't a number, . or -
+if 'stop_lat' in df:
+    df.stop_lat = df.stop_lat.apply(lambda x: ''.join([c for c in x if c in '1234567890.-']))
+else:
+    df['stop_lat'] = ''
+if 'stop_lon' in df:
+    df.stop_lon = df.stop_lon.apply(lambda x: ''.join([c for c in x if c in '1234567890.-']))
+else:
+    df['stop_lon'] = ''
+    
+# addendum : do for confidence as well, integers only
+if 'confidence' in df:
+    df.confidence = df.confidence.apply(lambda x: ''.join([c for c in x if c in '1234567890']))
 
 # put out all stops, but leave out the extra route-specific columns.
 
@@ -207,6 +235,7 @@ uniqueStopsDF = df['stop_name'].drop_duplicates().sort_values().copy().reset_ind
 uniqueStopsDF.to_csv(os.path.join(reportsFolder,'uniqueStops.csv'), header='stop_name', index_label='sr')
 logmessage('Created uniqueStops.csv, {} names.'.format( len(uniqueStopsDF) ))
 statsCollector['stops_all_unique'] = len(uniqueStopsDF)
+
 # 25.4.19 : do a unique list of ALL the stops as well for the Stops Reconilliation page.
 df['latlon'] = df.apply(lambda y: "{},{}".format(y['stop_lat'],y['stop_lon']), axis=1)
 
@@ -226,16 +255,23 @@ uniqueDF = df.groupby(['zap']).apply(groupEmALL).reset_index()
 uniqueDF.to_csv(os.path.join(reportsFolder,'stops_all_unique.csv'), index_label='sr')
 logmessage('Created stops_all_unique.csv, {} entries.'.format( len(uniqueDF) ))
 
-
 #### 
 # manually mapped stops
 mappedDF = df[ ( ~df['stop_lat'].isin([pd.np.NaN,'']) ) & ( ~df['confidence'].isin(['0',0])) ].copy().reset_index(drop=True)
+# note: pd.np.NaN may not be needed if we have guaranteed it's either float-in-str or nothing
 mappedDF.to_csv(os.path.join(reportsFolder,'stops_mapped.csv'), index_label='sr', columns=stopCols )
 logmessage('Created stops_mapped.csv, {} entries. Note, this is both locked and working.'.format( len(mappedDF) ))
 statsCollector['stops_mapped'] = len(mappedDF)
 
 # prep-work before grouping func: assemble lat-longs in the way needed for convex hull calculation
 mappedDF['latlon'] = mappedDF.apply(lambda y: [ float(y['stop_lat'] ),float(y['stop_lon']) ], axis=1)
+for N in range(len(mappedDF)):
+    try:
+        lat = round(float(mappedDF.at[N,'stop_lat']),5)
+        lon = round(float(mappedDF.at[N,'stop_lon']),5)
+        mappedDF.at[N,'latlon'] = [lat,lon]
+    except:
+        mappedDF.at[N,'latlon'] = []
 
 # unique mapped stops
 depotsList = mappedDF['depot'].unique().tolist()
@@ -246,16 +282,30 @@ def groupUniqueMapped(x):
     # 'latlon' column already created prior, it has lat-longs in [x,y] format.
     locations = []
     for location in x['latlon']:
-        if location not in locations:
-            locations.append(location) # doing uniques-finding this way, because we can't do regular .unique() with a pd series of lists/arrays.
+        if (location not in locations) and len(location)==2:
+            locations.append(location) 
+            # doing uniques-finding this way, because we can't do regular .unique() with a pd series of lists/arrays.
     
     if len(locations) > 2:
         # calc hull only if more than 3 locations are there.
-        hullArea = round( Polygon( np.array( convex_hull( np.array(locations) ) ) ).area * 10000 ,2)
+        hull = np.array(convex_hull(np.array(locations)))
+        hullArea = 0
+        if len(hull) >= 4:
+            # 26.2.19:
+            # Polygon calculation happens when the LinearRing supplied is of length >=4. Else it throws up an error. 
+            # A LinerRing has last point same as first point, which the hull func takes care of. 
+            # So if the hull variable is <= 3 points, it means there's only 2 points net, that makes a line, not a polygon.
+            hullArea = round( Polygon(hull).area * 10000 ,2)
+        '''
+        try:
+            hullArea = round( Polygon( np.array( convex_hull( np.array(locations) ) ) ).area * 10000 ,2)
+        except:
+            hullArea = pd.np.NaN
+        '''
     else: hullArea = pd.np.NaN
     
     # confidence:
-    x['confidence'] = x['confidence'].apply( lambda x: float(x) if x else 0)
+    x['confidence'] = x['confidence'].apply( lambda x: float(x) if x else 0) # now this is safe because confidende column go stripped off of all non-integer chars earlier
     confList = x['confidence'].tolist()
     if len(confList):
         meanConfidence = str( round( statistics.mean( confList ) ,1) )
@@ -318,6 +368,7 @@ unmappedUniqueDF.to_csv(os.path.join(reportsFolder,'stops_unmapped_unique.csv'),
 logmessage('Created stops_unmapped_unique.csv, {} entries.'.format( len(unmappedUniqueDF) ))
 statsCollector['stops_unmapped_unique'] = len(unmappedUniqueDF)
 
+
 ######
 # auto mapped stops
 autoDF = df[ ( ~df['stop_lat'].isin([pd.np.NaN,'']) ) & ( df['confidence'].isin(['0',0])) ].copy().reset_index(drop=True)
@@ -331,8 +382,8 @@ uniqueAutoDF.to_csv(os.path.join(reportsFolder,'stops_automapped_unique.csv'), i
 logmessage('Created stops_automapped_unique.csv, {} entries.'.format( len(uniqueAutoDF) ))
 statsCollector['stops_automapped_unique'] = len(uniqueAutoDF)
 
-endStops = time.time()
-logmessage("Stop-level reports creation done at {} seconds.".format(round(endStops-start,2)))
+times.append(time.time())
+logmessage("Stops work took {} seconds.".format(round(times[-1]-times[-2],2)))
 
 #######
 # get unique locations, unique manually mapped locations
@@ -348,8 +399,8 @@ locations_autoDF.to_csv(os.path.join(reportsFolder,'locations_auto.csv'), index_
 logmessage('Created locations_auto.csv, {} entries.'.format( len(locations_autoDF) ))
 statsCollector['locations_auto'] = len(locations_autoDF)
 
-endLoc = time.time()
-logmessage("Location-level reports creation done at {} seconds.".format(round(endLoc-endStops,2)))
+times.append(time.time())
+logmessage("Location-level work took {} seconds.".format(round(times[-1]-times[-2],2)))
 
 ############
 # Next Level : Condense to route-wise rows
@@ -368,8 +419,8 @@ for n,routeRow in routesDF.iterrows():
     dir0df = x[x['direction_id']=='0']
     dir1df = x[x['direction_id']=='1']
     
-    dir0dfMapped = dir0df[dir0df.stop_lat != ''].copy().reset_index(drop=True)
-    dir1dfMapped = dir1df[dir1df.stop_lat != ''].copy().reset_index(drop=True)
+    dir0dfMapped = dir0df[~dir0df.stop_lat.isin([pd.np.NaN,'',0])].copy().reset_index(drop=True)
+    dir1dfMapped = dir1df[~dir1df.stop_lat.isin([pd.np.NaN,'',0])].copy().reset_index(drop=True)
 
     dir0dfMapped['confidence'] = dir0dfMapped['confidence'].apply( lambda x: float(x) if x else 0)
     dir1dfMapped['confidence'] = dir1dfMapped['confidence'].apply( lambda x: float(x) if x else 0)
@@ -388,7 +439,6 @@ for n,routeRow in routesDF.iterrows():
     routesDF.at[n,'mapped1'] = len(dir1dfMapped)
     routesDF.at[n,'autoMapped'] = len( x[x['confidence'].isin(['0',0])] )
     routesDF.at[n,'avgConfidence'] = meanConfidence
-
 
 
 # % calculations, can be done at full array level
@@ -417,6 +467,8 @@ dfWorking.to_csv(os.path.join(reportsFolder,'routes_inprogress.csv'), index_labe
 logmessage('Created routes_inprogress.csv, {} entries.'.format( len(dfWorking) ))
 statsCollector['routes_inprogress'] = len(dfWorking)
 
+times.append(time.time())
+logmessage("Routes work took {} seconds.".format(round(times[-1]-times[-2],2)))
 
 #########
 # get averages, medians etc
@@ -460,10 +512,22 @@ json.dump(statsDict, open(os.path.join(reportsFolder,'stats.json'), 'w'), indent
 logmessage('Created stats.json')
 
 # also: make a CSV of the history
-pd.DataFrame.from_dict(statsDict['history'],orient='index').to_csv(os.path.join(reportsFolder,'stats.csv'),index_label='timestamp')
+# pd.DataFrame.from_dict(statsDict['history'],orient='index').to_csv(os.path.join(reportsFolder,'stats.csv'),index_label='timestamp')
+# 18.5.19 Long-overdue conversion to flat csv
+statsCollector = []
+for dateH in statsDict['history'].keys():
+    row = OrderedDict({'dateH': int(dateH)})
+    row.update(statsDict['history'][dateH])
+    if 'averages' in statsDict['history'][dateH].keys():
+        row.pop('averages',None) # get rid of averages dict and directly add its keys
+        row.update(statsDict['history'][dateH]['averages'])
+    statsCollector.append(row.copy())
+statsDF = pd.DataFrame(statsCollector).sort_values('dateH').reset_index(drop=True)
+statsDF.to_csv(os.path.join(reportsFolder,'stats.csv'), index=False)
 logmessage('Created stats.csv')
 
-
+times.append(time.time())
+logmessage("Stats work took {} seconds.".format(round(times[-1]-times[-2],2)))
 
 ##########################
 
@@ -499,20 +563,24 @@ pathDF = locDF.groupby(['folder','jsonFile','direction_id']).apply(flattenRoutes
 pathDF['feature'] = pathDF.apply(lambda x: geojson.Feature(geometry=x['path'], \
     properties={'folder':x.folder, 'jsonFile':x.jsonFile, 'direction_id':x.direction_id, \
     'num_stops':x.num_stops, 'stop_names':x.stop_names}), axis=1)
-                                     
+
 # get list of depots / folders and loop through them
 depotList = pathDF.folder.unique()
+depotList.sort() # sort it!
 
 for folder in depotList:
     features = pathDF[pathDF.folder==folder]['feature'].tolist()
     depotShape = geojson.FeatureCollection(features)
     geojson.dump(depotShape, open(os.path.join(shapesFolder,"{}.geojson".format(folder)), 'w'), indent=2)
-    print('Created {}.geojson with {} lines.'.format(folder,len(features)))
+    logmessage('Created {}.geojson with {} lines.'.format(folder,len(features)))
+
+times.append(time.time())
+logmessage("Shapefiles work took {} seconds.".format(round(times[-1]-times[-2],2)))
 
 ##########################
 
-end = time.time()
-logmessage("{}: Full reports creation script took {} seconds.".format(hourStamp,round(end-start,2)))
+times.append(time.time())
+logmessage("{}: Full reports creation script took {} seconds.".format(hourStamp,round(times[-1]-times[0],2)))
 
 ##########################
 # COMMON FUNCTIONS

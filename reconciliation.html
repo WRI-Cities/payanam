@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-<title>Payanam - Stops Reconciliation</title>
+<title>Stops Reconciliation - Payanam</title>
 
 <link href="lib/leaflet.css" orig="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css" rel="stylesheet">
 <link href="lib/jquery-ui.css" rel="stylesheet">
@@ -30,10 +30,11 @@
 <script src="lib/leaflet-lasso.min.js"></script>
 <script src="lib/Leaflet.Control.Custom.js"></script>
 <script src="lib/leaflet-providers.js"></script>
+<script src="lib/leaflet-hash.min.js"></script>
 <style>
 
 #map {
-height: 550px;
+height: 85vh;
 width: 100%;
 min-width: 500px;
 }
@@ -56,23 +57,6 @@ min-width: 500px;
 	box-shadow:0px 0px 5px black; /*looks 3D! no need of a border*/
 
 	font-size: 0.7em;
-}
-
-#crosshair {
-	position: absolute;
-	z-index: 1001;
-	top: 50%;
-	left: calc(50% + 1px);
-	pointer-events:none; /*from https://stackoverflow.com/a/7700122/4355695 */
-	/*bottom:25px;
-	left:10px;*/
-	/*right: 50px;*/
-}
-#crosshair > img {
-	height: 30px;
-	/*weight: 30px;*/
-	margin-top: -26px;
-	margin-left: -15px;
 }
 
 input[type=checkbox] {
@@ -171,9 +155,8 @@ textarea {
 				
     <div id="mapContainer">
     <div id="map"></div>
-    <div id="crosshair"><img src="lib/focus-black.svg"></div>
-	</div>
-	<!-- moved to leaflet custom control, see js/mappedStops.js
+    </div>
+	<!-- moved to leaflet custom control, see js/reconciliation.js
 	<p>Preview route line: <select id="routeLineSelect"><option value="">Pick a route</option></select></p>
 	-->
 	<br><b>Stops Reconcillation </b> &nbsp;&nbsp;&nbsp;

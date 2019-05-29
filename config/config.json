@@ -15,5 +15,5 @@
         "Mapped Stops": "reports/stops_mapped.csv",
         "Automapped Stops": "reports/stops_automapped.csv"
     },
-    "version": "v1.2.0"
+    "version": "v1.3.0"
 }

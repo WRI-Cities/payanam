@@ -433,33 +433,30 @@ def getallRoutes(targetFolder=routesFolder, ext='.json'):
 
 def userInfo(key):
     # accessFile,configFolder
-    keysdf = pd.read_csv(os.path.join(configFolder,accessFile), dtype=str).fillna('')
-
-    matchdf = keysdf[ keysdf['key']==key ].copy().reset_index(drop=True)
-    if not len(matchdf):
-        return False
-    
-    returnObj = { 'name': matchdf['name'].iloc[0],
-        'email': matchdf['email'].iloc[0],
-        'access': matchdf['access'].iloc[0],
-    }
+    keysdf = pd.read_csv(os.path.join(configFolder,accessFile), dtype=str, index_col='key').fillna('')
+    try:
+        returnObj = { 'name': keysdf.at[key,'name'], 'email': keysdf.at[key,'email'], 'access': keysdf.at[key,'access']  }
+    except KeyError as e:
+        returnObj = False
     return returnObj
 
 
 def checkAccess(key, desired="VIEWER"):
-    keysdf = pd.read_csv(os.path.join(configFolder,accessFile), dtype=str).fillna('')
-    matchdf = keysdf[ keysdf['key']==key ].copy().reset_index(drop=True)
-
-    if not len(matchdf):
-        return False
-    
-    currentAccess = matchdf['access'].iloc[0]
-    
+    keysdf = pd.read_csv(os.path.join(configFolder,accessFile), dtype=str, index_col='key').fillna('')
     try:
-        returnStatus = accessRanking.index(currentAccess) >= accessRanking.index(desired)
-    except ValueError:
-        returnStatus = false
-    
+        currentAccess = keysdf.at[key,'access']
+        try:
+            returnStatus = accessRanking.index(currentAccess) >= accessRanking.index(desired)
+            # accessRanking is a list defined in launch.py, like ["VIEW","MAPPER","DATAENTRY","REVIEW","ADMIN"]
+            # this statement gives True if the access level possessed by the user is greater than or equal to the desired access level
+        except ValueError:
+            # one or both of the access level values isn't present in accessRanking list
+            returnStatus = False
+
+    except KeyError as e:
+        # key provided is invalid
+        returnStatus = False
+
     return returnStatus
 
 ################################
@@ -706,7 +703,9 @@ def saveDataEntryRoute(filename,data={}, key=False):
 
     for direction_id in ['0','1']:    
         stopLinesHolder = data.get('stops{}'.format(direction_id),'').split('\n')
-        if len(stopLinesHolder)<2: continue # error out
+        
+        # if len(stopLinesHolder)<2: continue # error out # 19.5.19 : intervention: this was not letting us delete return trips in cases where there is only onward trip. So, trust the data entry folks, rely on backups.
+        
         stopCollector = []
         for stopLine in stopLinesHolder:
             stopLine = stopLine.strip()
@@ -723,14 +722,22 @@ def saveDataEntryRoute(filename,data={}, key=False):
             stopParts = stopLine.split('|')
             row = OrderedDict()
             row['stop_name'] = stopParts[0]
+            # 22.5.19 Intervention : for lat-long and confidence values, strip out all non-numeric chars
             if len(stopParts) >= 3:
-                row['stop_lat'] = stopParts[1]
-                row['stop_lon'] = stopParts[2]
+                row['stop_lat'] = ''.join([c for c in stopParts[1] if c in '1234567890.-'])
+                row['stop_lon'] = ''.join([c for c in stopParts[2] if c in '1234567890.-'])
             if len(stopParts) > 3:
-                row['confidence'] = stopParts[3]
+                row['confidence'] = ''.join([c for c in stopParts[3] if c in '1234567890'])
+            
             stopCollector.append(row.copy())
+
         if len(stopCollector):
             routeD['stopsArray{}'.format(direction_id)] = stopCollector.copy()
+            changesMade = True
+        else:
+            # 22.4.19 : Crap, this part was also preventing us from blanking out return journeys
+            logmessage("saveDataEntryRoute: Warning: {}: Direction {} is completely blank now.".format(filename,direction_id))
+            routeD['stopsArray{}'.format(direction_id)] = []
             changesMade = True
 
     
@@ -974,6 +981,7 @@ def depotsListFunc():
     for (dirpath, dirnames, filenames) in os.walk(routesFolder):
         d.extend(dirnames)
         break
+    d.sort() # always sort!
     logmessage(d)
     content = '<option value="">(All - ignore this line)</option>'
     for subfolder in d:

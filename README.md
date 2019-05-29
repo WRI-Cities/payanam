@@ -33,16 +33,17 @@ Initially deployed on https://server.nikhilvj.co.in/payanam/
 - Here are sample crontab entries that can be set up on a unbuntu system by `crontab -e` command:  
 ```
 # Payanam: Reports generation, run every 10 mins 
-# */6 * * * * /usr/bin/python3 /home/user1/payanam/reports_creation.py
+*/10 * * * * /usr/bin/python3 /home/user1/payanam/reports_creation.py
 
 # Payanam: GTFS generation, run every 2 hours
-# 0 */12 * * * /usr/bin/python3 /home/user1/payanam/gtfs_creation.py
+0 */2 * * * /usr/bin/python3 /home/user1/payanam/gtfs_creation.py
 ```
 
 - Cron tips:
 - - Ensure that the user account has write access to the payanam folder
 - - Use absolute paths in all things cron.
 - - You can redirect the stdout and stderr outputs to other log files or to `/dev/null` (aka the black hole); these files are logging everything to `reports/logs/log.txt` anyways.
+- - This website will help you figure out your cron: https://crontab.guru
 
 ----
 
@@ -62,7 +63,7 @@ Payanam comes packed with a plethora of assistance features to aid the user in m
 - Here you can set up API keys (or passwords) for different levels of users. 
 - First, edit the ADMIN row and assign a secret password and your email id.
 - For your team members, create rows with different access values, and assign each user a unique email id and key.
-- Do not share the 'key' values with everybody.
+- Do not share the 'key' values with everybody, and please keep them unique (one key = one user).
 - DATAENTRY level will allow to create routes in the Data Entry page.
 - MAPPER level will allow to map created routes in the Route Mapper page. This is the most basic level with any exective powers.
 - REVIEW level will let the user "lock" a route once its mapping and timings info is fully set.

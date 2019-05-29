@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-<title>Payanam - Timings</title>
+<title>Timings - Payanam</title>
 
 <link href="lib/jquery-ui.min.css" rel="stylesheet">
 
@@ -87,17 +87,20 @@ Choose a route: <select id="jsonSelect"></select> &nbsp;&nbsp;
     <!-- 1 ############################-->
     <div id="tab1">
     <div class="row"><div class="col-md-4 onward">
-        <h5>Onward Journey: <span class="fromTo"></span></h5>
+        <h5>Onward: <small><span class="fromTo"></span></small></h5>
         <p>Trip start times:<br>
         <textarea class="trip_times" rows=5></textarea></p>
     </div><div class="col-md-4 return">
-        <h5>Return Journey: <span class="fromTo"></span></h5>
+        <h5>Return: <small><span class="fromTo"></span></small></h5>
         <p>Trip start times:<br>
         <textarea class="trip_times" rows=5></textarea><br>
         <small><a href="javascript:;" onclick="trip_times_copy()">copy from onward</a></small>
     </p>
     </div><div class="col-md-4">
-    <p class="alert alert-primary"><small>Put timings in hh:mm 24h format, separated by line-breaks, spaces, commas, tabs or '|'.</small></p>
+    <p class="alert alert-primary"><small>Put timings in hh:mm 24h format like "12:34" or "22:04".<br>
+        You can separate them by newline [Enter], space, comma, tab or '|'.<br>
+        Using dot(.) is ok, like "23.10". It will be replaced with (:). 
+    </small></p>
     <p><small>
         <button onclick="resetTimings()">Reset to blanks</button> &nbsp;
         <button onclick="defaultTimings()">Load Defaults</button>
@@ -110,7 +113,7 @@ Choose a route: <select id="jsonSelect"></select> &nbsp;&nbsp;
     <!-- 2 ############################-->
     <div id="tab2"><!-- Frequency -->
     <div class="row"><div class="col-md-4 onward">
-        <h5>Onward Journey: <span class="fromTo"></span></h5>
+        <h5>Onward: <small><span class="fromTo"></span></small></h5>
         <p>First Trip: <input class="first_trip_start hhmm" placeholder="hh:mm"></p>
         <p>Last Trip: <input class="last_trip_start hhmm" placeholder="hh:mm"></p>
         <p>Frequency (headway):<br>
@@ -119,7 +122,7 @@ Choose a route: <select id="jsonSelect"></select> &nbsp;&nbsp;
             <input class="sec smallInput" placeholder="00">secs</p>
 
     </div><div class="col-md-4 return">
-        <h5>Return Journey: <span class="fromTo"></span></h5>
+        <h5>Return: <small><span class="fromTo"></span></small></h5>
         <p>First Trip: <input class="first_trip_start hhmm" placeholder="hh:mm"></p>
         <p>Last Trip: <input class="last_trip_start hhmm" placeholder="hh:mm"></p>
         <p>Frequency (headway):<br>

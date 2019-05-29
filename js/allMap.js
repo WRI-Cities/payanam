@@ -3,9 +3,8 @@
 
 // ######################################
 /* 1. GLOBAL VARIABLES */
-
-const globalRandom = (new Date).getTime();
 const shapesFolder = 'reports/shapes/';
+// globalRandon : defined in common.js
 
 // cycling through colors, see phrogzColors[] array in commonjs
 var globalColorNum = 0;
@@ -56,7 +55,6 @@ var overlays = {
 
 var layerControl = L.control.layers(baseLayers, overlays, {collapsed: true, autoZIndex:false}).addTo(map); 
 
-
 // ######################################
 // RUN ON PAGE LOAD
 
@@ -89,10 +87,17 @@ function loadRoutes() {
             //for(let i=0; i<results.data.length; i++)
 
             results.data.forEach(r => {
+
+                var percent = '';
+                if( parseFloat(r['mapped%total']) > 99.99) 
+                    percent = `<small>(${r['mapped%total']}%)</small>`;
+                else 
+                    percent = `<small><b>(${r['mapped%total']}%)</b></small>`;
+
                 row = {
                     "id": `${r.folder}|${r.jsonFile}`,
                     "pid": r.folder,
-                    "name": `${r.jsonFile} <small>(${r['mapped%total']}%)</small>`,
+                    "name": `${r.routeName} ${percent}`,
                     "jsonFile": r.jsonFile
                 };
                 simTreeData.push(row);

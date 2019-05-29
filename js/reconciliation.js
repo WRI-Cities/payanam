@@ -45,7 +45,7 @@ var uniqueStopsTable = new Tabulator("#uniqueStopsTable", {
         {title:"sr", field:"sr", headerFilter:"input", headerTooltip:"sr", width:15, headerSort:true },
         //{title:"zap", field:"zap", headerFilter:"input", headerTooltip:"zap", width:150, headerSort:true },
         {title:"stop_name", field:"stop_name", headerFilter:"input", headerTooltip:"stop_name", width:150, headerSort:true, bottomCalc:namesTotal },
-        {title:"locs", field:"num_locations", headerFilter:"input", headerTooltip:"num_locations", width:70, headerSort:true },
+        {title:"locs", field:"num_locations", headerFilter:"input", headerTooltip:"Number of Locations on Map", width:60, headerSort:true },
         {title:"count", field:"count", headerFilter:"input", headerTooltip:"count", width:70, headerSort:true },
         {title:"hull", field:"hull", headerFilter:"input", headerTooltip:"hull", width:70, headerSort:true },
         {title:"routes", field:"routes", headerFilter:"input", headerTooltip:"routes", width:100, headerSort:true },
@@ -68,6 +68,23 @@ var uniqueStopsTable = new Tabulator("#uniqueStopsTable", {
 
 });
 
+// dropdown for direction column. From https://github.com/olifolkerd/tabulator/issues/1011#issuecomment-476360437
+var select = $("<select><option value=''>(all)</option><option value='0'>Up(0)</option><option value='1'>Down(1)</option></select>");
+// note: below block is boilerplate code copied from tabulator. Do not distrurb!
+var selectEditor = function (cell, onRendered, success, cancel, editorParams) {
+    select.css({ "padding":"1px", "width":"100%", "box-sizing":"border-box" });
+    select.val(cell.getValue()); //Set value of select to the current value of the cell
+    onRendered(function(){ //set focus on the select box when the select is selected (timeout allows for select to be added to DOM)
+        select.focus();
+        select.css("height","100%");
+    });
+    //when the value has been set, trigger the cell to update
+    select.on("change blur", function(e){
+        success(select.val());
+    });
+    return select[0]; //return the select element // this needs to have [0] suffix
+}
+
 var stopsTable = new Tabulator("#stopsTable", {
 	height:stopsTable_height,
     selectable:true,
@@ -78,14 +95,14 @@ var stopsTable = new Tabulator("#stopsTable", {
     columns:[ //Define Table Columns
 		{title:"sr", field:"sr", headerFilter:"input", headerTooltip:"sr", width:15, headerSort:false },
 		//{title:"zap", field:"zap", headerFilter:"input", headerTooltip:"zap", width:150, headerSort:true },
-        {title:"stop_name", field:"stop_name", headerFilter:"input", headerTooltip:"stop_name", width:120, headerSort:false, bottomCalc:stopsTotal },
-        {title:"jsonFile", field:"jsonFile", headerFilter:"input", headerTooltip:"jsonFile", width:80, headerSort:false },
-        {title:"depot", field:"depot", headerFilter:"input", headerTooltip:"depot", width:50, headerSort:false },
-		{title:"direction_id", field:"direction_id", headerFilter:"input", headerTooltip:"direction_id", width:50, headerSort:false },
-        {title:"stop_lat", field:"stop_lat", headerFilter:"input", headerTooltip:"stop_lat", width:70, headerSort:true },
-        {title:"stop_lon", field:"stop_lon", headerFilter:"input", headerTooltip:"stop_lon", width:70, headerSort:true },
-        {title:"confidence", field:"confidence", headerFilter:"input", headerTooltip:"confidence", width:50, headerSort:true },
-        {title:"stop_sequence", field:"stop_sequence", headerFilter:"input", headerTooltip:"stop_sequence", width:50, headerSort:false }
+        {title:"stop_name", field:"stop_name", headerFilter:"input", headerTooltip:"stop_name", width:120, headerSort:true, bottomCalc:stopsTotal },
+        {title:"route", field:"routeName", headerFilter:"input", headerTooltip:"Route Name", width:100, headerSort:true },
+        {title:"depot", field:"depot", headerFilter:"input", headerTooltip:"depot", width:50, headerSort:true, headerVertical:true },
+		{title:"direction", field:"direction_id", headerFilter:"input", headerTooltip:"direction_id", width:70, headerSort:false, headerFilter:selectEditor },
+        {title:"lat", field:"stop_lat", headerFilter:"input", headerTooltip:"stop_lat", width:40, headerSort:true, headerVertical:true },
+        {title:"lon", field:"stop_lon", headerFilter:"input", headerTooltip:"stop_lon", width:40, headerSort:true, headerVertical:true },
+        {title:"conf", field:"confidence", headerFilter:"input", headerTooltip:"confidence", width:40, headerSort:true, headerVertical:true },
+        {title:"seq", field:"stop_sequence", headerFilter:"input", headerTooltip:"stop_sequence", width:40, headerSort:false, headerVertical:true }
 	],
 	rowSelected:function(row){ //when a row is selected
 		colorMap(row.getData().sr,selectedColor);
@@ -123,7 +140,7 @@ var baseLayers = { "OpenStreetMap.org" : OSM, "OpenStreetMap.IN": OSMIndia, "Str
 var map = new L.Map('map', {
 	center: STARTLOCATION,
 	zoom: STARTZOOM,
-	layers: [MBlight],
+	layers: [gStreets],
 	scrollWheelZoom: true,
 	maxZoom: 20
 });
@@ -182,7 +199,7 @@ L.easyButton('<img src="lib/zoom-out.svg" width="100%" title="zoom to see all st
 L.control.custom({
 	position: 'bottomleft',
 	content: `<select id="routeLineSelect"><option value="">Pick a route</option></select><br>
-		Preview route | <a href="javascript:;" onclick="jump2Mapper()">Edit</a>`,
+		<span id="routeLineStatus">Preview route</span> | <a href="javascript:;" onclick="jump2Mapper()">Edit</a>`,
 	classes: 'divOnMap1'
 }).addTo(map);
 
@@ -199,15 +216,28 @@ L.control.custom({
 	classes: 'divOnMap2'
 }).addTo(map);
 
+// Add in a crosshair for the map. From https://gis.stackexchange.com/a/90230/44746
+var crosshairIcon = L.icon({
+    iconUrl: crosshairPath,
+    iconSize:     [crosshairSize, crosshairSize], // size of the icon
+    iconAnchor:   [crosshairSize/2, crosshairSize/2], // point of the icon which will correspond to marker's location
+});
+crosshair = new L.marker(map.getCenter(), {icon: crosshairIcon, interactive:false});
+crosshair.addTo(map);
+// Move the crosshair to the center of the map when the user pans
+map.on('move', function(e) {
+    crosshair.setLatLng(map.getCenter());
+});
 
-
+// lat, long in url
+var hash = new L.Hash(map);
 
 // #####################################################################
 // RUN ON PAGE LOAD
 
 $(document).ready(function() {
 	
-	$.ajaxSetup({ cache: false }); // from https://stackoverflow.com/a/13679534/4355695 to force ajax to always load from source, don't use browser cache. This prevents browser from loading old route jsons.
+	// $.ajaxSetup({ cache: false }); // from https://stackoverflow.com/a/13679534/4355695 to force ajax to always load from source, don't use browser cache. This prevents browser from loading old route jsons.
 	
 	loadDefaults();
 	loadUniqueStops();
@@ -296,6 +326,7 @@ function loadStops(which='mapped',first=false) {
 	stopsTable.clearData();
 
 	Papa.parse(`reports/${filename}?_=${(new Date).getTime()}`, {
+		// using ..new Date.. here because each time we load this we want a fresh copy.
 		download: true,
 		header: true,
 		skipEmptyLines: true,
@@ -401,11 +432,11 @@ function colorMap(sr,chosenColor) {
 }
 
 function markerOnClick(e) {
-	// when a stop is clicked on map, select and show it in the table.
+	// when a stop is clicked on map, show it in the table.
 	if(e.target.properties) {
 		sr = e.target.properties.sr;
-		stopsTable.selectRow(sr);
-		stopsTable.scrollToRow(sr, "center", false);
+		// stopsTable.selectRow(sr); // 9.5.19 : Intervention: only lasso can select. when we want to put x stops in another location belonging to another stop entirely, this click-select was ending up selecting that as well. So now, only lasso can select a stop. Clicking only sets the destination location (red dot)
+		stopsTable.scrollToRow(sr, "top", false);
 	}
 }
 
@@ -513,18 +544,37 @@ function resetEverything() {
 	lineLayer.clearLayers();
 	mapillaryLayer.clearLayers();
 	
-	MBlight.addTo(map);
+	// MBlight.addTo(map);
 	map.flyTo(STARTLOCATION,STARTZOOM);
 }
 
 function drawLine(folder,jsonFile,direction_id) {
 	console.log("Fetching route:",folder,jsonFile,direction_id);
+	$('#routeLineStatus').html('loading..');
 	lineLayer.clearLayers();
-	$.getJSON(`${APIpath}getRouteLine?folder=${folder}&jsonFile=${jsonFile}&direction_id=${direction_id}`, function(data) {
-		var routeLine = L.polyline.antPath(data, {color: stopOnwardColor, weight:3, delay:1000, interactive:false }).addTo(lineLayer);
-		if (!map.hasLayer(lineLayer)) map.addLayer(lineLayer);
-		console.log("Fetched route:",folder,jsonFile,direction_id);
+	// 28.5.19: Intervention: load the route's json directly instead of bothering the server.
+    $.getJSON(`routes/${folder}/${jsonFile}`, function(data) {
+        lineLayer.clearLayers(); // clear me baby one more time
+        if(! Array.isArray(data[`stopsArray${direction_id}`])) {
+            $('#mapStatus').html('No lat-longs available for this route.');
+            return;
+        }
+        var collector = [];
+        data[`stopsArray${direction_id}`].forEach(row => {
+            let lat = parseFloat(row['stop_lat']);
+            let lon = parseFloat(row['stop_lon']);
+            if(checklatlng(lat,lon)) collector.push([lat,lon]);
+        });
+        var routeLine = L.polyline.antPath(collector, {color: stopOnwardColor, weight:3, delay:1000, interactive:false }).addTo(lineLayer);
+        if (!map.hasLayer(lineLayer)) map.addLayer(lineLayer);
+        //map.fitBounds(lineLayer.getBounds(), {padding:[0,0], maxZoom:15});
+        console.log("Fetched route:",folder,jsonFile,direction_id);
+		$('#routeLineStatus').html('Preview route');
+
+    }).fail(function(err) {
+		$('#routeLineStatus').html('Failed to fetch route');
 	});
+
 }
 
 function jump2Mapper() {

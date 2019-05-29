@@ -95,7 +95,7 @@ def logmessage( *content ):
     # str(x) for x in list(content) : handles numbers in the list, converts them to string before concatenating. 
     # from https://stackoverflow.com/a/3590168/4355695
     print(line) # print to screen also
-    f = open(os.path.join(logFolder, 'log.txt'), 'a', newline='\r\n', encoding='utf8') #open in append mode
+    f = open(os.path.join(logFolder, 'gtfslog.txt'), 'a', newline='\r\n', encoding='utf8') #open in append mode
     print(timestamp, line, file=f)
     # `,file=f` argument at end writes the line, with newline as defined, to the file instead of to screen. 
     # from https://stackoverflow.com/a/2918367/4355695
@@ -530,14 +530,6 @@ logmessage('Created stop_times.txt, {} entries.'.format(len(stopTimesDF)))
 zf.write(os.path.join(gtfsFolder, 'stop_times.txt' ), arcname='stop_times.txt', compress_type=zipfile.ZIP_DEFLATED )
 
 
-# In[46]:
-
-
-t5 = time.time()
-logmessage("writing out all GTFS files took {} seconds.".format(round(t5-t4,2)))
-logmessage("The whole GTFS creation script took {} seconds.".format(round(t5-t1,2)))
-
-
 # In[47]:
 
 
@@ -548,6 +540,14 @@ zf.close()
 
 
 logmessage("Zipped them up into gtfs.zip")
+
+
+# In[46]:
+
+
+t5 = time.time()
+logmessage("writing out all GTFS files took {} seconds.".format(round(t5-t4,2)))
+logmessage("The whole GTFS creation script took {} seconds.".format(round(t5-t1,2)))
 
 
 # In[49]:

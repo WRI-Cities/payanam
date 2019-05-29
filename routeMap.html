@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-<title>Payanam - Map a Route</title>
+<title>Map a Route - Payanam</title>
 
 <link href="lib/leaflet.css" orig="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css" rel="stylesheet">
 <link href="lib/jquery-ui.css" rel="stylesheet">
@@ -29,6 +29,7 @@
 <script src='lib/Leaflet.fullscreen.min.js' alt='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js'></script>
 <script src="lib/Leaflet.Control.Custom.js"></script>
 <script src="lib/leaflet-providers.js"></script>
+<script src="lib/leaflet-hash.min.js"></script>
 <style>
 
 #map {
@@ -40,37 +41,6 @@ width: 100%;
 
 #mapContainer {
 	position: relative;
-}
-
-#panel {
-	position: absolute;
-	bottom:25px;
-	left:10px;
-	/*right: 50px;*/
-	z-index: 1000;
-	padding: 10px;
-	border-radius: 5px;
-	background-color: rgba(255,255,255,0.7);
-	box-shadow:0px 0px 5px black; /*looks 3D! no need of a border*/
-
-	font-size: 0.7em;
-}
-
-#crosshair {
-	position: absolute;
-	z-index: 1001;
-	top: 50%;
-	left: calc(50% + 1px);
-	pointer-events:none; /*from https://stackoverflow.com/a/7700122/4355695 */
-	/*bottom:25px;
-	left:10px;*/
-	/*right: 50px;*/
-}
-#crosshair > img {
-	height: 30px;
-	/*weight: 30px;*/
-	margin-top: -26px;
-	margin-left: -15px;
 }
 
 input[type=checkbox] {
@@ -91,8 +61,10 @@ textarea {
 
 .divOnMap2 {
 	padding: 2px;
-	background: rgba(255, 255, 255, 0.644);
+	background: rgba(255, 255, 255, 0.8);
 	font-size: 12px;
+	border: 1px solid #000;
+	-webkit-border-radius: 5px; -moz-border-radius: 5px; border-radius: 5px;
 }
 
 .scrollbox {
@@ -101,6 +73,14 @@ textarea {
 	width: 90%;
 	background: rgba(255, 240, 28, 0.2);
 	padding: 10px 20px;
+}
+
+.divOnMap1 {
+	padding: 10px;
+	background: rgba(255, 255, 255, 0.6);
+	/*font-size: 14px;*/
+    border-radius: 5px;
+	box-shadow:0px 0px 5px black; 
 }
 </style>
 
@@ -128,9 +108,9 @@ textarea {
 <small>
     <input id="addStop" size="10"><button onclick="addStop()" type="button" title="Add a stop to the route">Add a stop</button>
     &nbsp;&nbsp;&nbsp;&nbsp;
-	<button onclick="adoptSuggested()">Adopt first suggestions<br> for all unmapped stops</button>
-	&nbsp;&nbsp;
 	<button onclick="reSequence()">Re-Number<br>Sequence</button>
+	&nbsp;&nbsp;
+	<button onclick="adoptSuggested()">Adopt first suggestions<br> for all unmapped stops</button>
 	&nbsp;&nbsp;
 	<button onclick="routeTable.clearFilter(true)">Clear All<br>Filters</button>
 	
@@ -145,7 +125,7 @@ textarea {
 <div class="collapse show" id="collapseDatabank">
     <div id="databankTable"></div>
     <small><p class="littleTopSpace">
-        On map: show top <input id="databankLimit" size="5" value="15000"> results. (wait 2 seconds after sorting/filtering to render on map)
+        On map: show top <input id="databankLimit" size="5" value="25000"> results. (wait 2 seconds after sorting/filtering to render on map)
     </p></small>
 </div>
 
@@ -153,7 +133,8 @@ textarea {
 <div class="col-md-6">
 
 <small>
-<span id="numMapped">x stops mapped</span> | see map-center on: 
+<span id="numMapped">x stops mapped</span> | 
+see map-center on: 
 <big><a href="javascript:{}" onclick="openExternalMap('g')" class="badge badge-primary">Gmaps</a>&nbsp; 
 <a href="javascript:{}" onclick="openExternalMap('m')" class="badge badge-primary">Mapillary</a>&nbsp;
 <a href="javascript:{}" onclick="openExternalMap('p')" class="badge badge-primary">Pic4carto</a>
@@ -162,12 +143,6 @@ textarea {
 </small>
 <div id="mapContainer">
 <div id="map"></div>
-<div id="panel">
-<span id="location"></span><br>
-        Confidence:<br>
-<select id="confidenceSelect" class="confidence-style"></select>
-</div>
-<div id="crosshair"><img src="lib/focus-black.svg"></div>
 </div>
 
 

@@ -58,9 +58,6 @@ $(document).ready(function() {
         $('#jsonSelect').trigger('chosen:updated');
     }
 
-    // load defaults
-    loadDefaults();
-
 });
 
 //#####################################
@@ -83,7 +80,7 @@ function loadJson() {
 	$.getJSON(`routes/${globalRoute}`, function(data) {
         clearEverything();
         routeParts = globalRoute.split('/');
-        $('.routeMeta').html(`Depot:${routeParts[0]} | filename:${routeParts[1]} | Route Name : ${data.routeName}`);
+        $('.routeMeta').html(`Depot:${routeParts[0]} | filename:${routeParts[1]} | Route Name : ${data.routeName} | <a href="routeMap.html?route=${globalRoute}" target="_blank">edit map</a> | <a href="routeEntry.html?route=${globalRoute}" target="_blank">edit sequence</a>`);
         $('#saveButtonRoute').html(`for ${globalRoute}`);
 
         // legacy stuff
@@ -95,6 +92,16 @@ function loadJson() {
 
         ['0','1'].forEach(dir => {
             let dirclass = (dir == '0')? '.onward' : '.return';
+
+            // from and to
+            if(Array.isArray(data[`stopsArray${dir}`])) {
+                let fromStop = data[`stopsArray${dir}`][0]['stop_name'];
+                let len = data[`stopsArray${dir}`].length;
+                let toStop = data[`stopsArray${dir}`][len-1]['stop_name'];
+                $(`${dirclass} .fromTo`).html(`${fromStop} -> ${toStop}`);
+            }
+
+            // timings
             if( ! data[`timeStructure_${dir}`]) return;
             var a = data[`timeStructure_${dir}`];
 
@@ -205,9 +212,34 @@ function cleanList(timingsHolder) {
 function cleanTime(timeStr) {
     // keeping this as a separate function so it can be reused by all
     if(!timeStr.length) return '';
-    let clean1 = timeStr.replace(/[^\d:]+/g,"");
-    if(clean1.length < 4 || clean1.length > 8) {
-        console.log(`"${timeStr}" when cleaned to "${clean1}" is too small or too long to be a valid timing. Discarding it.`);
+    let clean1 = timeStr.replace(/[.]+/g,":").replace(/[^\d:]+/g,""); // replacing dot with : then zapping everything that's not a digit or a :
+    
+    // Start diagnosis of what format this is in
+    // first, rule out the good guys
+    if(/^(2[0-3]|[0-1]?[\d]):[0-5]\d:[0-5]\d$/.test(clean1)) {
+        // hh:mm:ss match, like 12:34:56
+        if(clean1.length==7) clean1 = `0${clean1}`; // pad with zero if it was like 3:45:00
+    }
+    else if(/^(2[0-3]|[0-1]?[\d]):[0-5]\d$/.test(clean1)) {
+        // neat match, from 0:00 (00:00) to 23:59
+        if(clean1.length==4) clean1 = `0${clean1}`; // pad with zero if it was like 3:45
+    }
+    else if(/^(2[0-3]|[0-1]?[\d])[0-5]\d$/.test(clean1)) {
+        // hmm match like 245 or hhmm match like 1234.
+        if(clean1.length==3) clean1 = `0${clean1}`; // pad with zero if it was like 345
+        clean1 = `${clean1.slice(0,2)}:${clean1.slice(2,4)}`;
+        console.log(`Changed ${timeStr} to ${clean1}`);
+    }
+    else if(clean1.length < 4) {
+        console.log(`"${timeStr}" when cleaned to "${clean1}" is too small to be a valid timing. Discarding it.`);
+        clean1 = '';
+    }
+    else if(clean1.length > 8) {
+        console.log(`"${timeStr}" when cleaned to "${clean1}" is too long to be a valid timing. Discarding it.`);
+        clean1 = '';
+    }
+    else {
+        console.log(`"${timeStr}" when cleaned to "${clean1}" is an invalid timing. Discarding it.`);
         clean1 = '';
     }
     return clean1;

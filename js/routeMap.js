@@ -8,8 +8,7 @@ moved here from RouteMapper
 // default point colors : MOVED to common.js
 
 const routeTable_height = "400px";
-const globalRandom = (new Date).getTime();
-console.log(globalRandom);
+// const globalRandom -> moved to js/common.js
 
 var clickedflag = false;
 var debugMode = true;
@@ -41,11 +40,7 @@ var stopsTotal = function(values, data, calcParams){
 	return calc + ' stops total';
 }
 
-//########################
-// now the actual table construction
-
-
-var suggestedTrueFalse = function(cell, formatterParams, onRendered){
+/* var suggestedTrueFalse = function(cell, formatterParams, onRendered){
 	let value = cell.getValue();
 	console.log(value);
 	if(value) {
@@ -53,28 +48,44 @@ var suggestedTrueFalse = function(cell, formatterParams, onRendered){
 			return true;
 	}
 	return false;
-};
+}; */
+
+// dropdown for direction column. From https://github.com/olifolkerd/tabulator/issues/1011#issuecomment-476360437
+var select = $("<select><option value=''>(all)</option><option value='0'>Up(0)</option><option value='1'>Down(1)</option></select>");
+// note: below block is boilerplate code copied from tabulator. Do not distrurb!
+var selectEditor = function (cell, onRendered, success, cancel, editorParams) {
+    select.css({ "padding":"1px", "width":"100%", "box-sizing":"border-box" });
+    select.val(cell.getValue()); //Set value of select to the current value of the cell
+    onRendered(function(){ //set focus on the select box when the select is selected (timeout allows for select to be added to DOM)
+        select.focus();
+        select.css("height","100%");
+    });
+    //when the value has been set, trigger the cell to update
+    select.on("change blur", function(e){
+        success(select.val());
+    });
+    return select[0]; //return the select element // this needs to have [0] suffix
+}
+
+//########################
+// now the actual table construction
+
 var routeTable = new Tabulator("#routeTable", {
 	height:routeTable_height,
 	selectable:1, // make max 1 row click-select-able. https://tabulator.info/docs/3.4?#selectable
 	movableRows: true, //enable user movable rows
 	//layout:"fitColumns", //fit columns to width of table (optional)
-	//index: "orig_id", 
+	index: "id", 
 	layout:"fitDataFill",
 	addRowPos: "top",
 	tooltipsHeader:true,
-	/*
-	dataTree:true, 
-	dataTreeCollapseElement: "<span class='badge badge-secondary'>-</span> ",
-	dataTreeExpandElement: "<span class='badge badge-secondary'>+</span> ",
-	*/
 	columns:[ //Define Table Columns
 		{rowHandle:true, formatter:"handle", headerSort:false, frozen:true},
 		//{title:"orig_id", field:"orig_id", frozen:true, headerFilter:"input" },
 		//{title:"Num", width:40, formatter: "rownum", headerSort:false}, // row numbering
 		{title:"seq", field:"stop_sequence", editor:"input", headerFilter:"input", headerTooltip:"stop sequence number", width:15, headerSort:false, frozen:true },
 		{title:"stop_name", field:"stop_name", editor:"input", headerFilter:"input", bottomCalc:stopsTotal, width:100, headerSort:false, frozen:true },
-		{title:"direction", field:"direction_id", editor:"input", headerFilter:"input", headerTooltip:"direction_id: 0 for onward, 1, for return", width:50, headerSort:false },
+		{title:"direction", field:"direction_id", editor:"select", editorParams:{values:{"0":"Up(0)", "1":"Down(1)", "": "(none)"}}, width:70, headerSort:false, headerFilter:selectEditor },
 		
 		{title:"stop_lat", field:"stop_lat", headerSort:false, width:60, headerTooltip:"latitude" },
 		{title:"stop_lon", field:"stop_lon", headerSort:false, width:60, headerTooltip:"longitude" },
@@ -84,7 +95,9 @@ var routeTable = new Tabulator("#routeTable", {
 			
 			if(confirm('Are you sure you want to remove lat-long values for this stop?'))
 				cell.getRow().update({'stop_lat':'','stop_lon':'', 'confidence':''});
-				if(map.hasLayer(lineLayer)) {
+				
+				mapStops(); 
+				if(lineLayer.getLayers().length && map.hasLayer(lineLayer)) {
 					map.removeLayer(lineLayer);
 					routeLines();
 				}
@@ -92,16 +105,23 @@ var routeTable = new Tabulator("#routeTable", {
 		},
 		//{title:"offset", field:"offset", headerFilter:"input", editor:"input", headerTooltip:"arrival time, in mins after first stop", headerSort:false },
 		{title:"stop_desc", field:"stop_desc", editor:"input", headerFilter:"input", width:100, headerSort:false },
-		{title:"suggested", field:"suggested", width:100, headerSort:false },
+		
 		{formatter:"buttonCross", align:"center", title:"del", width:20, headerSort:false, headerTooltip:"delete a stop", cellClick:function(e, cell){
 			if(confirm('Are you sure you want to delete this entry?'))
 				cell.getRow().delete();
+				mapStops(); 
+				if(lineLayer.getLayers().length && map.hasLayer(lineLayer)) {
+					map.removeLayer(lineLayer);
+					routeLines();
+				}
 			}
 		},
+		{title:"suggested", field:"suggested", width:100, headerSort:false },
 	],
 	rowSelected:function(row){ //when a row is selected
 		setTimeout(function() {
 			hide( document.querySelector("#panel") ); // when changing to next stop, old stop shouldn't show.
+			$('#stopInfo').html(`<big><b>${row.getData().stop_name}</b></big>`);
 
 			if(row.getData().suggested) mapSuggested(row.getData().suggested, row.getData().stop_name); // show suggested locations
 			else $('#autoSuggest').hide('slow');
@@ -115,7 +135,7 @@ var routeTable = new Tabulator("#routeTable", {
 				mapZoomHere(lat,lon);
 			} 
 	
-		}, 500); //wait then run all this
+		}, 250); //wait then run all this
 	},
 	rowDeselected:function(row){ //when a row is selected
 		hide( document.querySelector("#panel") );
@@ -132,28 +152,12 @@ var routeTable = new Tabulator("#routeTable", {
 					map.removeLayer(lineLayer);
 					routeLines();
 				}
-			},1000);
+			},500);
 		}
 	},
 	dataLoaded:function(data){
 		if(!data.length) return;
-		setTimeout(function() { mapStops(firstRun=true); },1000); // load the map but after an interval
-
-		/*
-		//empty the select element
-		olcSelectTop.empty();
-		//fill the select element with options from the data
-		olcSelectTop.append("<option value=''>All</option>");
-		ol6Collector = new Set(); // using sets in js. from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set
-		data.forEach(function(item){
-			if(!item.olc6) return;
-			if( item.olc6.length > 0 && !ol6Collector.has(item.olc6) ) {
-				value = item.olc6.slice(start=3, end=7);
-				ol6Collector.add(item.olc6);
-				olcSelectTop.append("<option value='" + item.olc6 + "'>" + value + "</option>");
-			}
-		});
-		*/
+		setTimeout(function() { mapStops(firstRun=true); },500); // load the map but after an interval
 	},
 
 	cellEditing:function(cell){
@@ -161,14 +165,29 @@ var routeTable = new Tabulator("#routeTable", {
 		row = cell.getRow(); //.getData().stop_id);
 		row.toggleSelect();
 	},
-	/* crap its doing its job but diabling all row highlight colors etc
-	rowFormatter:function(row){
-		// from https://tabulator.info/docs/4.1/format#format
-        var data = row.getData();
-        if(data.suggested){
-            row.getElement().style['background-color'] = suggestedTabularColor;
-        }
-    }, */
+
+	cellEdited:function(cell){
+		// re-map stuff after an edit
+		setTimeout(function() {
+			mapStops(); 
+			if(lineLayer.getLayers().length && map.hasLayer(lineLayer)) {
+				map.removeLayer(lineLayer);
+				routeLines();
+			}
+		},500);
+	},
+
+	rowMoved:function(row){
+		// re-map stuff after a row-move
+		setTimeout(function() {
+			mapStops(); 
+			if(lineLayer.getLayers().length && map.hasLayer(lineLayer)) {
+				map.removeLayer(lineLayer);
+				routeLines();
+			}
+		},500);
+	},
+
 });
 
 const databankTable_height = 400;
@@ -235,7 +254,7 @@ var databankTable = new Tabulator("#databankTable", {
 			limit = $('#databankLimit').val();
 			mapDataBank(limit=limit);
 			mapStops(); // putting them on top
-		}, 1000);
+		}, 500);
 	}
 
 });
@@ -256,7 +275,7 @@ var baseLayers = { "OpenStreetMap.org" : OSM, "OpenStreetMap.IN": OSMIndia, "Str
 var map = new L.Map('map', {
 	center: STARTLOCATION,
 	zoom: 10,
-	layers: [MBlight],
+	layers: [gStreets],
 	scrollWheelZoom: true,
 	maxZoom: 20,
 });
@@ -309,17 +328,43 @@ L.easyButton('<img src="lib/route.svg" width="100%" title="toggle route lines" d
 map.addControl(new L.Control.Fullscreen({position:'topright'}));
 
 L.control.custom({
-	position: 'bottomleft',
-	content: `<a onclick="toggleLayer('databank')" href="javascript:;">toggle databank</a>`,
-	classes: 'divOnMap2'
+	position: 'bottomright',
+	content: `<p align="right">Stop: <span id="stopInfo">select one</span><br>
+	<a href="javascript:{}" onclick="nextStop(-1)"><< previous</a> | <a href="javascript:{}" onclick="nextStop(1)">next >></a><br><br>
+	<a onclick="toggleLayer('databank')" href="javascript:;">toggle databank</a><br>
+	<a onclick="openMapillary()" href="javascript:;">fetch nearby Mapillary pics</a><br>
+		<span id="mapillaryStatus"></span></p>`,
+	classes: 'divOnMap1'
 }).addTo(map);
 
 L.control.custom({
-	position: 'bottomright',
-	content: `<a onclick="openMapillary()" href="javascript:;">fetch nearby Mapillary pics</a><br>
-		<span id="mapillaryStatus"></span>`,
-	classes: 'divOnMap2'
+	position: 'bottomleft',
+	content: `<div id="panel">
+	<span id="location"></span><br>
+	Confidence:<br>
+	<select id="confidenceSelect" class="confidence-style"></select>
+	</div>`,
+classes: 'divOnMap1'
 }).addTo(map);
+
+
+// Add in a crosshair for the map. From https://gis.stackexchange.com/a/90230/44746
+var crosshairIcon = L.icon({
+    iconUrl: crosshairPath,
+    iconSize:     [crosshairSize, crosshairSize], // size of the icon
+    iconAnchor:   [crosshairSize/2, crosshairSize/2], // point of the icon which will correspond to marker's location
+});
+crosshair = new L.marker(map.getCenter(), {icon: crosshairIcon, interactive:false});
+crosshair.addTo(map);
+// Move the crosshair to the center of the map when the user pans
+map.on('move', function(e) {
+    crosshair.setLatLng(map.getCenter());
+});
+
+// lat, long in url
+var hash = new L.Hash(map);
+
+
 // ########################
 // RUN ON PAGE LOAD
 $(document).ready(function() {
@@ -456,15 +501,21 @@ function loadRoute(firstTime=true) {
 		// get stopsArray0, stopsArray1
 
 		$('#routeStatus').html(`<b>${globalRoute}</b>`);
+		$('#routeSaveStatus').html('');
+		idCounter = 0;
 		for(i=0;i<data['stopsArray0'].length; i++) {
 			data['stopsArray0'][i]['direction_id'] = "0";
 			data['stopsArray0'][i]['stop_sequence'] = i+1;
+			data['stopsArray0'][i]['id'] = idCounter;
+			idCounter ++;
 		}
 
 		if(data['stopsArray1']) {
 			for(i=0;i<data['stopsArray1'].length; i++) {
 				data['stopsArray1'][i]['direction_id'] = "1";
 				data['stopsArray1'][i]['stop_sequence'] = i+1;
+				data['stopsArray1'][i]['id'] = idCounter;
+				idCounter ++;
 			}
 		} else {
 			data['stopsArray1'] = [];
@@ -479,7 +530,7 @@ function loadRoute(firstTime=true) {
 			tableData.push(makeStopRow(element));
 		});
 
-		//console.log(tableData);
+		// console.log(tableData);
 		routeTable.setData(tableData);
 		routeTable.clearFilter(true); // clear the filter, so people are not misled into thinking there's only one direction here etc.
 		
@@ -530,12 +581,12 @@ function saveRoute() {
 			console.log('Successfully sent data via POST to server /API/loadJson, response received: ' + returndata);
 			$('#routeSaveStatus').html(`<p class="alert alert-success">${returndata}</p>`);
 			globalChangesDone = false;
-			setTimeout(function(){ $('#routeSaveStatus').html(''); }, 180000);
+			//setTimeout(function(){ $('#routeSaveStatus').html(''); }, 180000);
 		},
 		error: function(jqXHR, exception) {
 			console.log( jqXHR.responseText );
 			$('#routeSaveStatus').html(`<p class="alert alert-danger">${jqXHR.responseText}</p>`);
-			setTimeout(function(){ $('#routeSaveStatus').html(''); }, 180000);
+			//setTimeout(function(){ $('#routeSaveStatus').html(''); }, 180000);
 		}
 	});
 
@@ -629,7 +680,7 @@ function lockRoute() {
 // JS FUNCTIONS
 
 function makeStopRow(element) {
-	let rowJson = { 'direction_id':element.direction_id, 'stop_sequence':element.stop_sequence, 'stop_name':element.stop_name};
+	let rowJson = { 'id':element.id, 'direction_id':element.direction_id, 'stop_sequence':element.stop_sequence, 'stop_name':element.stop_name};
 	if(element.stop_lat) rowJson['stop_lat'] = parseFloat( String(element.stop_lat).trim() );
 	if(element.stop_lon) rowJson['stop_lon'] = parseFloat( String(element.stop_lon).trim() );
 	if(element.offset) rowJson['offset'] = element.offset;
@@ -785,12 +836,12 @@ function mapStops(firstRun=false){
 			color: 'black',
 			weight: 0.5,
 			opacity: 1,
-			fillOpacity: 0.7
+			fillOpacity: directionDecideOpacity(stoprow)
 		};
 		var tooltipContent = `${stoprow.stop_name}`;
 		if(stoprow.stop_sequence) tooltipContent = `${stoprow.stop_sequence}:${tooltipContent}`; // prefix sequence
 		
-		var stopmarker = L.circleMarker([lat,lon], circleMarkerOptions).bindTooltip(tooltipContent);
+		var stopmarker = L.circleMarker([lat,lon], circleMarkerOptions).bindTooltip(tooltipContent, {direction:'right', offset:[10,0]});
 		stopmarker.properties = stoprow;
 		stopmarker.addTo(stopsLayer);
 	}
@@ -889,7 +940,13 @@ function mapGPX(data) {
 }
 
 function addStop() {
-	routeTable.addRow({'stop_name': $('#addStop').val() });
+	var selectedRows = routeTable.getSelectedRows();
+	if(selectedRows.length) {
+		presentDir = selectedRows[0].getData().direction_id;
+		routeTable.addRow({'stop_name': $('#addStop').val(), 'direction_id':presentDir }, false, selectedRows[0]);
+	}
+	else 
+		routeTable.addRow({'stop_name': $('#addStop').val() });
 }
 
 function routeLines() {
@@ -930,7 +987,7 @@ function routeLines() {
 
 function mapSuggested(suggested, name='') {
 	suggestedLayer.clearLayers();
-	suggestionsHTML = `Auto-suggested locations for stop ${name} :<br>`;
+	suggestionsHTML = `<a href="javascript:;" onclick="toggleLayer('suggested')">Toggle Auto-suggested locations</a> for stop ${name} :<br>`;
 	if(!suggested.length) return;
 
 	console.log(suggested);
@@ -972,8 +1029,8 @@ function mapSuggested(suggested, name='') {
 		suggestionsHTML += `<a href="javascript:{}" onclick="mapSuggestedZoomHere('${name}',${lat},${lon},16)" class="badge badge-primary">${count} ${fullname}</a>&nbsp;&nbsp;`;
 	});
 
-	suggestionsHTML += `<small><a href="javascript:;" onclick="toggleLayer('suggested')">Toggle Suggestions</a></small>`;
-	if( ! map.hasLayer(suggestedLayer) ) map.addLayer(suggestedLayer);
+	// suggestionsHTML += `<small><a href="javascript:;" onclick="toggleLayer('suggested')">Toggle Suggestions</a></small>`;
+	// if( ! map.hasLayer(suggestedLayer) ) map.addLayer(suggestedLayer); // 7.5.19 : Keep this off only, let the user toggle it on.
 	$('#autoSuggest').html(suggestionsHTML)
 	$('#autoSuggest').show('slow');
 }
@@ -1040,6 +1097,7 @@ function reSequence() {
 	var data = routeTable.getData();
 	onwardCount = 0;
 	returnCount = 0;
+	idCount = 0;
 	for(i=0; i< data.length; i++) {
 		let stopRow = data[i];
 		if(stopRow['direction_id'] == '1') {
@@ -1049,6 +1107,8 @@ function reSequence() {
 			onwardCount ++;
 			stopRow['stop_sequence'] = onwardCount;
 		}
+		stopRow['id'] = idCount;
+		idCount ++;
 	}
 	routeTable.setData(data);
 }
@@ -1111,6 +1171,31 @@ function toggleLayer(which="suggested") {
 		else map.removeLayer(databank);
 	}
 
+}
+
+function nextStop(n) {
+	var activeRows = routeTable.getData(true);
+	var firstID = activeRows[0].id;
+	var lastID = activeRows[activeRows.length-1].id;
+	console.log('firstID:',firstID,'lastID:',lastID);
+	var selectedRows = routeTable.getSelectedRows();
+	if(selectedRows.length) {
+
+		routeTable.deselectRow();
+		var row = selectedRows[0];
+		var nextRow = n>0 ? row.getNextRow() : row.getPrevRow();
+		var nextID = 0;
+		// if there is a next row, get its id. else loop around
+		if(nextRow) nextID = nextRow.getData().id;
+		else nextID = n>0 ? firstID : lastID;
+
+		console.log('Next ID:',nextID);
+		routeTable.selectRow(nextID);
+		routeTable.scrollToRow(nextID, "top", true);
+	}
+	else { 
+		routeTable.selectRow(firstID);
+	}
 }
 //###############################
 // GRAVEYARD

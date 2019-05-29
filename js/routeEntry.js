@@ -42,7 +42,7 @@ $(document).ready(function() {
 			return;
 		}
 		if(globalChangesDone) {
-			if(!confirm('Warning: There are unsaved changes on this route which will be lost. Sure you want to proceed?') )
+			if(!confirm('Warning: There may be unsaved changes on this route which will be lost. Sure you want to proceed?') )
 				return;
 			else globalChangesDone = false;
 		}
@@ -60,7 +60,7 @@ $(document).ready(function() {
 
 	toggleHints();
 	// Automatically turn hints off after this many seconds, if they're still on.
-	setTimeout(function() { if(showHints) toggleHints(); }, 5*1000);
+	setTimeout(function() { if(showHints) toggleHints(); }, 10*1000);
 
 	/*
 	// suppress browser from scrolling to top
@@ -105,8 +105,8 @@ function saveRoute() {
 	if(data.routeFileName == '' || data.depot == '') {
 		alert('Error: Please put a proper filename and depot code for the route, in green box right side.');
 		$('.saveStatus').html('Invalid filename given.');
-		clearTimeout(statusTimer);
-		statusTimer = setTimeout(function() { $('.saveStatus').html(''); }, waitTime/5*1000);
+		// clearTimeout(statusTimer);
+		// statusTimer = setTimeout(function() { $('.saveStatus').html(''); }, waitTime/5*1000);
 		return;
 	}
 	var route_id = `${data.depot}/${data.routeFileName}`;
@@ -148,14 +148,7 @@ function saveRoute() {
 			//console.log('result:',result);
 			globalChangesDone = false;
 			loadJsonsList();
-			
-			setTimeout(function() { 
-				// Just for psychological satisfaction, even when all is done, wait a second before clearing out and telling user that all is saved.
-				$('.saveStatus').html(`<b>${result}</b>`);
-				clearTimeout(statusTimer);
-				statusTimer = setTimeout(function() { $('.saveStatus').html(''); }, waitTime*1000);
-			}, 1*1000);
-			
+			$('.saveStatus').html(`<b>${result}</b>`);
 		},
 		error: function(jqXHR, exception) {
 			console.log( jqXHR.responseText );
@@ -206,11 +199,12 @@ function loadJson(route_id) {
 				stopsText += '\n';
 			});
 			stops0.setValue(stopsText);
-			console.log('loaded stops from json array instead of string');
+			
 		}
 		else {
 			if(jsondata['stops0'])
 				stops0.setValue(jsondata['stops0']);
+				console.log('loaded stops from legacy string stops0 instead of json array stopsArray0');
 		}
 		
 		if( jsondata['stopsArray1'] instanceof Array) {
@@ -232,7 +226,13 @@ function loadJson(route_id) {
 		// make the ace editor boxes unselected; by default they're select-all when just loaded.
 		stops0.clearSelection();
 		stops1.clearSelection();
-	});
+		globalChangesDone = false; //21.5.19: once the file is loaded, set this flag.
+		
+	}).fail(function(err) {
+		console.log(`Failed to load ${route_id}. Error message: ${err.responseText}`);
+		clearEverything(loaderText='error. Check logs');
+		globalChangesDone = false; //21.5.19: set this flag to false again since the messages would have disturbed.
+	});;
 }
 //#####################################
 // Other Functions
