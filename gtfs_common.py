@@ -207,19 +207,22 @@ def lat_long_dist(lat1,lon1,lat2,lon2):
 def computeDistance(sequencedf):
     prevLat = prevLon = 0 # dummy initiation
     total_dist = 0
-    for N, seq in sequencedf.iterrows():
-        lat = float(seq.stop_lat)
-        lon = float(seq.stop_lon)
+    for N in range(len(sequencedf)):
+        lat = float(sequencedf.at[N,'stop_lat'])
+        lon = float(sequencedf.at[N,'stop_lon'])
         
         if N == 0:
-            seq['ll_dist'] = 0
+            sequencedf.at[N,'ll_dist'] = 0
         else:
-            seq['ll_dist'] = lat_long_dist(lat,lon, prevLat,prevLon)
+            sequencedf.at[N,'ll_dist'] = lat_long_dist(lat,lon, prevLat,prevLon)
         
-        total_dist += seq['ll_dist']
+        total_dist += sequencedf.at[N,'ll_dist']
+        sequencedf.at[N,'ll_dist_traveled'] = round(total_dist,2)
         prevLat = lat
         prevLon = lon
-    return round(total_dist,1)
+        
+    return round(total_dist,2)
+    # even the original sequencedf passed is changed with the ll_dist and ll_dist_traveled columns added, unless a copy was passed in.
 
 def computeDuration(sequencedf, this_speed):
     total_dist = computeDistance(sequencedf)

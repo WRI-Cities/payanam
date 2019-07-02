@@ -63,6 +63,13 @@ var routes_tabulator = new Tabulator("#routes", {
             var win = window.open(`routeEntry.html?route=${jumpRoute}`, '_blank');
             win.focus();
         }},
+        {title: "Print", formatter:printIcon, width:40, align:"center", headerVertical:true, cellClick:function(e, cell){
+            let row = cell.getRow().getData();
+            let jumpRoute = `${row['folder']}/${row['jsonFile']}`;
+            var win = window.open(`print.html?route=${jumpRoute}`, '_blank');
+            win.focus();
+        }},
+        {title:"services", field:"service", headerFilter:"input", headerTooltip:"services", width:100, headerSort:true },
         // {title:"avg confidence", field:"avgConfidence", headerFilter:"input", headerTooltip:"avg confidence", width:70, headerSort:true, headerVertical:true },
         // {title:"% autoMapped", field:"autoMapped%", headerFilter:"input", headerTooltip:"autoMapped%", width:70, headerSort:true, headerVertical:true, formatter:"progress", formatterParams: progressbar },
         //{title:"% manually", field:"manuallyMapped%", headerFilter:"input", headerTooltip:"manuallyMapped%", width:70, headerSort:true, headerVertical:true, formatter:"progress", formatterParams: progressbar },
@@ -192,7 +199,8 @@ function drawLine(folder,jsonFile,direction_id="0") {
     $('#mapStatus').html('Loading..');
     lineLayer.clearLayers();
     // 28.5.19: Intervention: load the route's json directly instead of bothering the server.
-    $.getJSON(`routes/${folder}/${jsonFile}`, function(data) {
+    $.getJSON(`routes/${folder}/${jsonFile}?_=${(new Date).getTime()}`, function(data) {
+        // putting timestamp at end so that new json is loaded every time.
         lineLayer.clearLayers(); // clear me baby one more time
         if(! Array.isArray(data[`stopsArray${direction_id}`])) {
             $('#mapStatus').html('No lat-longs available for this route.');

@@ -894,6 +894,7 @@ def storeTimings(filename,data,key):
     # let specfics vary; over-write the whole timeStructure_{} objects in the json
     routeD['timeStructure_0'] = data.get('timeStructure_0',{}).copy()
     routeD['timeStructure_1'] = data.get('timeStructure_1',{}).copy()
+    routeD['serviceNumbers'] = data.get('serviceNumbers',[]).copy()
     
     if key:
         info = userInfo(key)
@@ -911,6 +912,7 @@ def storeTimings(filename,data,key):
         return "{}: timings data saved.".format(filename)
     else:
         return "{}: no changes, invalid API ke.".format(filename,direction_id,searchName)
+
 
 def unLockFunc(filename,key):
     if not os.path.exists(os.path.join(lockFolder,filename)):

@@ -151,6 +151,9 @@ def churnJsons(foldername):
                     
                     # 8.5.19: intervention: nix the suggestions
                     row.pop('suggested',None)
+
+                    # 30.5.19 : intervention : make confidence string only
+                    if row.get('confidence',False): row['confidence'] = str(row.get('confidence',''))
                     
                     stopsCollector.append(row.copy())
 
@@ -176,6 +179,9 @@ def churnJsons(foldername):
                     routeRow['hull'] = round( Polygon(hull).area * 10000 ,2)
             else:
                 routeRow['hull'] = pd.np.NaN
+            
+            # 27.6.19 Service numbers
+            routeRow['service'] = ','.join(data.get('serviceNumbers',[]))
             
             logmessage(root,file)
             routesCollector.append(routeRow.copy())
@@ -260,8 +266,16 @@ logmessage('Created stops_all_unique.csv, {} entries.'.format( len(uniqueDF) ))
 mappedDF = df[ ( ~df['stop_lat'].isin([pd.np.NaN,'']) ) & ( ~df['confidence'].isin(['0',0])) ].copy().reset_index(drop=True)
 # note: pd.np.NaN may not be needed if we have guaranteed it's either float-in-str or nothing
 mappedDF.to_csv(os.path.join(reportsFolder,'stops_mapped.csv'), index_label='sr', columns=stopCols )
-logmessage('Created stops_mapped.csv, {} entries. Note, this is both locked and working.'.format( len(mappedDF) ))
+logmessage('Manually mapped stops:')
+logmessage('Created stops_mapped.csv (including all reconciled stops), {} entries.'.format( len(mappedDF) ))
 statsCollector['stops_mapped'] = len(mappedDF)
+
+# 30.5.19: Lot of redundance repeats in stops_mapped.csv thanks to reconciliation. To keep the databank etc loading light, let's drop the repeaters (those with same name, lat and long) 
+mapped_norepeatsDF = mappedDF.drop_duplicates(['zap','stop_lat','stop_lon']).copy().reset_index(drop=True)
+mapped_norepeatsDF.to_csv(os.path.join(reportsFolder,'stops_mapped_databank.csv'), index_label='sr', columns=stopCols )
+logmessage('Created stops_mapped_databank.csv (removing repeats by name+lat+long), {} entries.'.format( len(mapped_norepeatsDF) ))
+statsCollector['stops_mapped_norepeat'] = len(mapped_norepeatsDF)
+# note: this is different from stops_mapped_unique: while that is only unique by name, this is unique by name + location
 
 # prep-work before grouping func: assemble lat-longs in the way needed for convex hull calculation
 mappedDF['latlon'] = mappedDF.apply(lambda y: [ float(y['stop_lat'] ),float(y['stop_lon']) ], axis=1)
@@ -337,13 +351,13 @@ uniqueMappedDF = mappedDF.groupby(['zap']).apply(groupUniqueMapped).reset_index(
 # ensure hull column is numeric
 uniqueMappedDF['hull'] = pd.to_numeric(uniqueMappedDF['hull'], errors='coerce')
 
-# uniqueMappedDF = mappedDF.drop_duplicates('stop_name').copy().reset_index(drop=True)
 uniqueMappedDF.to_csv(os.path.join(reportsFolder,'stops_mapped_unique.csv'), index_label='sr')
 logmessage('Created stops_mapped_unique.csv, {} entries.'.format( len(uniqueMappedDF) ))
 statsCollector['stops_mapped_unique'] = len(uniqueMappedDF)
 
 ######
 # unmapped stops
+logmessage('Unmapped stops:')
 unmappedDF = df[ df['stop_lat'].isin([pd.np.NaN,'']) ].copy().reset_index(drop=True)
 unmappedDF.to_csv(os.path.join(reportsFolder,'stops_unmapped.csv'), index_label='sr', columns=stopCols)
 logmessage('Created stops_unmapped.csv, {} entries.'.format( len(unmappedDF) ))
@@ -371,6 +385,7 @@ statsCollector['stops_unmapped_unique'] = len(unmappedUniqueDF)
 
 ######
 # auto mapped stops
+logmessage('Automapped stops:')
 autoDF = df[ ( ~df['stop_lat'].isin([pd.np.NaN,'']) ) & ( df['confidence'].isin(['0',0])) ].copy().reset_index(drop=True)
 autoDF.to_csv(os.path.join(reportsFolder,'stops_automapped.csv'), index_label='sr', columns=stopCols )
 logmessage('Created stops_automapped.csv, {} entries.'.format( len(autoDF) ))

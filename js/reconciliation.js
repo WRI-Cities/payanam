@@ -11,6 +11,7 @@ const selectedColor = "yellow"
 
 var tableData = [];
 var chosenStops = [];
+var dataBank = [];
 
 // leaflet layers - need them global so all function can add to and remove from them.
 var stopsLayer = new L.geoJson(null);
@@ -239,7 +240,7 @@ $(document).ready(function() {
 	
 	// $.ajaxSetup({ cache: false }); // from https://stackoverflow.com/a/13679534/4355695 to force ajax to always load from source, don't use browser cache. This prevents browser from loading old route jsons.
 	
-	loadDefaults();
+	loadDefaults(callbackFlag=true, callbackFunc=loadDataBank);
 	loadUniqueStops();
 	loadStops(which='mapped',first=true);
 
@@ -333,12 +334,12 @@ function loadStops(which='mapped',first=false) {
 		complete: function(results, file) {
 			stopsTable.setData(results.data);
 			$('#status').html(``);
-			
+			/*
 			// extra: if called on page load, then store everything in an all-stops layer
 			if(first) {
 				//allMappedLayer
 				setTimeout(function(){ mapStops(false); }, 2000); 
-			}
+			}*/
 		},
 		error: function(err, file, inputElem, reason) {
             console.log(`${filename} not found. please run reports generation script once.`);
@@ -347,9 +348,12 @@ function loadStops(which='mapped',first=false) {
 }
 
 function mapStops(normal=true) {
-	tableData = stopsTable.getData(true);
+	if(normal) tableData = stopsTable.getData(true);
+	else tableData = dataBank; // hack: push in the databank instead if this is a databank function call
+
 	console.log('Displaying',tableData.length,'stops on map.'); 
 	// confirm if filter is working
+	if(!normal) console.log('Running mapStops() function for loading up the databank.');
 
 	if(normal) stopsLayer.clearLayers();
 	else allMappedLayer.clearLayers();
@@ -553,7 +557,8 @@ function drawLine(folder,jsonFile,direction_id) {
 	$('#routeLineStatus').html('loading..');
 	lineLayer.clearLayers();
 	// 28.5.19: Intervention: load the route's json directly instead of bothering the server.
-    $.getJSON(`routes/${folder}/${jsonFile}`, function(data) {
+    $.getJSON(`routes/${folder}/${jsonFile}?_=${(new Date).getTime()}`, function(data) {
+		// putting timestamp at end so that new json is loaded every time.
         lineLayer.clearLayers(); // clear me baby one more time
         if(! Array.isArray(data[`stopsArray${direction_id}`])) {
             $('#mapStatus').html('No lat-longs available for this route.');
@@ -606,4 +611,25 @@ function toggleLayer(which="allMapped") {
 	if(which == "allMapped")
 		if (!map.hasLayer(allMappedLayer)) map.addLayer(allMappedLayer);
 		else map.removeLayer(allMappedLayer);
+}
+
+function loadDataBank(data) {
+	var filename = data['databanksList']["Mapped Stops"]; // "reports/stops_mapped_databank.csv"
+	console.log('databank: ',filename);
+
+	Papa.parse(`${filename}?_=${globalRandom}`, {
+		download: true,
+		header: true,
+		skipEmptyLines: true,
+		dynamicTyping: true, // this reads numbers as numerical; set false to read everything as string
+		complete: function(results, file) {
+			// uniqueStopsTable.setData(results.data);
+			//$('#status').html(``);
+			dataBank = results.data;
+			mapStops(false);
+		},
+		error: function(err, file, inputElem, reason) {
+            console.log(`${filename} not found. please run reports generation script once.`);
+        }
+	});
 }

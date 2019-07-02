@@ -98,7 +98,7 @@ Choose a route: <select id="jsonSelect"></select> &nbsp;&nbsp;
     </p>
     </div><div class="col-md-4">
     <p class="alert alert-primary"><small>Put timings in hh:mm 24h format like "12:34" or "22:04".<br>
-        You can separate them by newline [Enter], space, comma, tab or '|'.<br>
+        You can copy-paste from excel, or type the values in, separated by line [press Enter], space, comma, tab or '|'.<br>
         Using dot(.) is ok, like "23.10". It will be replaced with (:). 
     </small></p>
     <p><small>
@@ -163,7 +163,18 @@ Choose a route: <select id="jsonSelect"></select> &nbsp;&nbsp;
     <small><a href="javascript:$('.duration').val('01:00');">Assume 1 hr</a> &nbsp; 
         | &nbsp; <a href="javascript:$('.duration').val('');" onclick="">clear durations</a><br>
     Note: If duration is left blank, it will be calculated in GTFS program by taking distance covered from lat-longs and assuming a default speed of <span id="defaultSpeed"></span> km/hr.</small>
-</div></div>
+</div>
+<div class="col-md-2"><br><br>
+    <h5>Service numbers:</h5>
+
+</div>
+<div class="col-md-4">
+    <textarea class="service" rows=5></textarea><br>
+</div>
+<div><br><br>
+    <p class="alert alert-primary"><small>You can copy-paste from excel, or type the values in, separated by line [press Enter], space, comma, tab or '|'.</small></p>
+</div>
+</div>
 
 <br>
 <p align="center">

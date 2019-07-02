@@ -55,6 +55,10 @@ var editIcon = function(cell, formatterParams, onRendered){
   return `<img src="lib/Blue_pencil.svg" height="20" width="20">`;  
 };
 
+var printIcon = function(cell, formatterParams, onRendered){ 
+  return `<img src="lib/printer-blue.svg" height="20" width="20">`;  
+};
+
 // Leaflet map setup - common stuff
 /*
 // background layers, using Leaflet-providers plugin. See https://github.com/leaflet-extras/leaflet-providers

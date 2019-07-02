@@ -2,6 +2,7 @@
 
 // ######################################
 /* GLOBAL VARIABLES */
+const stopIconSize = [20, 20];
 var URLParams = {}; // for holding URL parameters
 var globalRoute = '';
 
@@ -9,6 +10,7 @@ var baseLayer = [L.layerGroup(null), L.layerGroup(null)];
 var stopsLayer = [L.geoJson(null), L.geoJson(null) ];
 var lineLayer = [L.geoJson(null), L.geoJson(null) ];
 
+var globalLineCollector = [];
 // #################################
 /* MAPs */
 // background layers, using Leaflet-providers plugin. See https://github.com/leaflet-extras/leaflet-providers
@@ -21,8 +23,26 @@ var base = {
 "OSMIndia": [ L.tileLayer.provider('MapBox', {id: 'openstreetmap.1b68f018', accessToken: MBaccessToken }) , L.tileLayer.provider('MapBox', {id: 'openstreetmap.1b68f018', accessToken: MBaccessToken })],
 "gStreets": [ L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{maxZoom: 20, subdomains:['mt0','mt1','mt2','mt3']}) , L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{maxZoom: 20, subdomains:['mt0','mt1','mt2','mt3']})],
 "gHybrid": [ L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{maxZoom: 20, subdomains:['mt0','mt1','mt2','mt3']}) , L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{maxZoom: 20, subdomains:['mt0','mt1','mt2','mt3']})],
-"gSat": [ L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{maxZoom: 20,subdomains:['mt0','mt1','mt2','mt3']}) , L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{maxZoom: 20,subdomains:['mt0','mt1','mt2','mt3']})]
+"gSat": [ L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{maxZoom: 20,subdomains:['mt0','mt1','mt2','mt3']}) , L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{maxZoom: 20,subdomains:['mt0','mt1','mt2','mt3']})],
+
+
+"Stamen Toner": [ L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}{r}.{ext}', {attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', subdomains: 'abcd',	minZoom: 0,	maxZoom: 20, ext: 'png'}) ],
+"Stamen Toner-Lite": [ L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}{r}.{ext}', {attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', subdomains: 'abcd',	minZoom: 0,	maxZoom: 20, ext: 'png'}) ],
+"Stamen Watercolor": [ L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/watercolor/{z}/{x}/{y}{r}.{ext}', {attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', subdomains: 'abcd',	minZoom: 0,	maxZoom: 20, ext: 'png'}) ],
+"Stamen Terrain": [ L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}{r}.{ext}', {attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', subdomains: 'abcd',	minZoom: 0,	maxZoom: 20, ext: 'png'}) ],
+
+"CartoDB Positron": [L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { 	attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>', 	subdomains: 'abcd', 	maxZoom: 19 })],
+
+// fun layers!
+"MB Run": [ L.tileLayer.provider('MapBox', {id: 'nikhilsheth.m0mmicn2', accessToken: MBaccessToken }) ],
+"MB B+W": [ L.tileLayer.provider('MapBox', {id: 'nikhilsheth.m0mn13df', accessToken: MBaccessToken }) ],
+"MB Pencil": [ L.tileLayer.provider('MapBox', {id: 'nikhilsheth.m0mn5lf5', accessToken: MBaccessToken }) ],
+"MB Pirates": [ L.tileLayer.provider('MapBox', {id: 'nikhilsheth.m0mn8b72', accessToken: MBaccessToken }) ],
+"MB Wheatpaste": [ L.tileLayer.provider('MapBox', {id: 'nikhilsheth.m0mnld61', accessToken: MBaccessToken }) ],
+"MB Comic": [ L.tileLayer.provider('MapBox', {id: 'nikhilsheth.m0mo16hg', accessToken: MBaccessToken }) ]
+
 };
+
 /*
 var map = [
     new L.Map('map0', { layers: [base["MBlight"][0]], center: STARTLOCATION, zoom: STARTZOOM, scrollWheelZoom: true, maxZoom: 18, zoomControl: false, preferCanvas: true }),
@@ -30,8 +50,10 @@ var map = [
 ];
 */
 var map = [null,null];
-for(dir in [0,1]) {
-    map[dir] = new L.Map(`map${dir}`, { layers: [base["MBlight"][dir]], center: STARTLOCATION, zoom: STARTZOOM, scrollWheelZoom: true, maxZoom: 18, zoomControl: false });
+for(dir in [0]) {
+    map[dir] = new L.Map(`map${dir}`, { layers: [base["MBlight"][dir]], center: STARTLOCATION, zoom: STARTZOOM, scrollWheelZoom: true, maxZoom: 18, zoomControl: false, zoomDelta: 0.1, zoomSnap:0.1 });
+    L.control.scale({position: 'bottomleft'}).addTo(map[dir])
+    L.control.zoom({position: 'bottomleft'}).addTo(map[dir]);
     baseLayer[dir].addTo(map[dir]);
     stopsLayer[dir].addTo(map[dir]);
     lineLayer[dir].addTo(map[dir]);
@@ -42,14 +64,45 @@ var myRenderer = L.canvas({ padding: 0.5 });
 
 // Leaflet.Control.Custom : add custom HTML elements
 // see https://github.com/yigityuce/Leaflet.Control.Custom
+L.control.custom({
+	position: 'topright',
+    content: `
+    <h4><span id="routeInfo"><small><small>Click "Options" and pick a route</small></small></span></h4>
+
+    <div class="collapse hide" id="collapse_settings">
+    <p>Select a route: <select id="jsonSelect"></select></p>
+    <p>Change page dimensions:<br>
+    Width:<input id="width" size="5" value="1000" type="number" min="100" max="10000" step="10">px, 
+    Height:<input id="height" size="5" value="1450" type="number" min="100" max="10000" step="10">px<br>
+    Map part:<input id="ratio" size="5" value="69" type="number" min="20" max="100" step="1">% &nbsp;&nbsp;
+    <button onclick="changeDimensions()">Apply</button>
+    &nbsp; | &nbsp; 
+    <a onclick="changeDimensions(true)" href="javascript:;">Reset</a></p>
+
+    <!--Presets: <a>A4</a> | <a>A3</a> | <a>A2</a> | <a>A1</a>-->
+    </p>
+    <p>Change background: <select id="background"></select> </p>
+    <p>Change color: <input id="color" value="black" size="8">, font:<input id="fontColor" value="white" size="8">  <button onclick="changeColor()">Apply</button></p>
+
+    </div>
+    <div style="float:left;" class="no-print"><a data-toggle="collapse" href="#collapse_settings" role="button" aria-expanded="false" aria-controls="collapse_settings">>> Options</a></div>
+    <div style="float:right;" class="no-print">
+    <a onclick="zoomFit()" href="javascript:;">Fit map to Route</a> | 
+    <a onclick="window.print()" href="javascript:;">Print</a>
+    </div>
+  `,
+	classes: 'divOnMap1'
+}).addTo(map[0]);
+
+L.control.custom({
+    position: 'topleft',
+    content: `<span id="fromTo"></span>`,
+    classes: 'divOnMap1'
+}).addTo(map[0]);
+
 /*
 headerOptions = { position: 'bottomleft', content:`div class="mapHeader ${dir}" ` }
-L.control.custom({
-	position: 'bottomleft',
-	content: `<select id="routeLineSelect"><option value="">Pick a route</option></select><br>
-		<span id="routeLineStatus">Preview route</span> | <a href="javascript:;" onclick="jump2Mapper()">Edit</a>`,
-	classes: 'divOnMap1'
-}).addTo(map);
+
 */
 
 // #####################################################################
@@ -86,13 +139,11 @@ $(document).ready(function() {
         console.log('Auto-loading route:',URLParams['route']);
         globalRoute = URLParams['route'];
         loadJson();
-        $('#jsonSelect').val(globalRoute);
-        $('#jsonSelect').trigger('chosen:updated');
     }
 
-    $('#dims').on('change', function (e) {
+    /*$('#dims').on('change', function (e) {
         setDimensions(this.value);
-    });
+    });*/
 
     bgChoices();
 
@@ -100,31 +151,12 @@ $(document).ready(function() {
         console.log(this.value);
         var destination = this.value; // need to copy this over, as "this.value" doesn't make it to inside the next loop
         if( ! this.value) return;
-        for(dir in [0,1]) {
+        for(dir in [0]) {
             baseLayer[dir].clearLayers();
             base[destination][dir].addTo(baseLayer[dir]);
         }
     });
 
-    /* // test markers
-    var marker1 = L.marker([17.4963,78.42857]).addTo(stopsLayer[0]); marker1.bindTooltip('30c'); L.tooltipLayout.resetMarker(marker1);
-    var marker2 = L.marker([17.47532,78.55641]).addTo(stopsLayer[0]); marker2.bindTooltip('35 ground'); L.tooltipLayout.resetMarker(marker2);
-    var marker3 = L.marker([17.39174,78.51236]).addTo(stopsLayer[0]); marker3.bindTooltip('6 number'); L.tooltipLayout.resetMarker(marker3);
-    var marker4 = L.marker([17.3918,78.51082]).addTo(stopsLayer[0]); marker4.bindTooltip('6 number'); L.tooltipLayout.resetMarker(marker4);
-    var marker5 = L.marker([17.39164,78.51092]).addTo(stopsLayer[0]); marker5.bindTooltip('6 number'); L.tooltipLayout.resetMarker(marker5);
-    var marker6 = L.marker([17.51731,78.51293]).addTo(stopsLayer[0]); marker6.bindTooltip('7 temples'); L.tooltipLayout.resetMarker(marker6);
-    var marker7 = L.marker([17.32553,78.57151]).addTo(stopsLayer[0]); marker7.bindTooltip('8v x road'); L.tooltipLayout.resetMarker(marker7);
-    var marker8 = L.marker([17.35577,78.43393]).addTo(stopsLayer[0]); marker8.bindTooltip('9 number x road'); L.tooltipLayout.resetMarker(marker8);
-    var marker9 = L.marker([17.35656,78.43831]).addTo(stopsLayer[0]); marker9.bindTooltip('9 number x road'); L.tooltipLayout.resetMarker(marker9);
-    var marker10 = L.marker([17.48543,78.38575]).addTo(stopsLayer[0]); marker10.bindTooltip('9th phase rtc'); L.tooltipLayout.resetMarker(marker10);
-    var marker11 = L.marker([17.44416,78.433]).addTo(stopsLayer[0]); marker11.bindTooltip('a g colony x road'); L.tooltipLayout.resetMarker(marker11);
-    var marker12 = L.marker([17.45299,78.59078]).addTo(stopsLayer[0]); marker12.bindTooltip('a-type'); L.tooltipLayout.resetMarker(marker12);
-    var marker13 = L.marker([17.46854,78.5652]).addTo(stopsLayer[0]); marker13.bindTooltip('a. p. s. r. t. c kushaiguda depot'); L.tooltipLayout.resetMarker(marker13);
-    var marker14 = L.marker([17.47436,78.51717]).addTo(stopsLayer[0]); marker14.bindTooltip('a.o.c.'); L.tooltipLayout.resetMarker(marker14);
-    
-    L.tooltipLayout.initialize(map0, null);
-    */
-   
 
 });
 
@@ -146,20 +178,34 @@ function loadJson() {
 	if(globalRoute == '') return;
 
 	// clearEverything(loaderText='loading...');
-	console.log('loadJson():',globalRoute)
+    console.log('loadJson():',globalRoute);
+
 
 	$.getJSON(`routes/${globalRoute}`, function(data) {
-        console.log(data);
+        // console.log(data);
         // gotta render!
-        [0,1].forEach(function(dir,n) {
+        $('#jsonSelect').val(globalRoute);
+        $('#jsonSelect').trigger('chosen:updated');
+        let depot = globalRoute.split('/')[0];
+        $('#routeInfo').html(`Depot: ${depot} | Route: ${data.routeName}`);
+        // change page title
+        document.title = `Depot ${depot}, Route ${data.routeName}`;
+
+        [0].forEach(function(dir,n) {
             stopsLayer[dir].clearLayers();
             var stopsArray = data[`stopsArray${dir}`] || [];
 
             mappedList = stopsArray.filter(a => ! isNaN(parseFloat(a.stop_lat)));
-            console.log(mappedList);
+            // filters down to mapped stops only
+            // console.log(mappedList);
             
-            lineCollector = [];
+            globalLineCollector = []; // this is a global variable now
+            var listHTML = '';
+            var fromStop = '', toStop = '';
             mappedList.forEach(function(stoprow,i) {
+                if(i==0) fromStop = stoprow.stop_name;
+                if(i+1 == mappedList.length) toStop = stoprow.stop_name;
+
                 let lat = parseFloat(stoprow['stop_lat']);
                 let lon = parseFloat(stoprow['stop_lon']);
                 
@@ -167,13 +213,14 @@ function loadJson() {
                     console.log('Skipping a stop because of invalid values:', stopsjson[stoprow]);
                     return;
                 }
-                lineCollector.push([lat,lon]);
-                var tooltipContent = `${i}: ${stoprow.stop_name}`;
+                globalLineCollector.push([lat,lon]);
+                listHTML += `<li>${i+1}. ${stoprow.stop_name}</li>`; // populate stops list
+                var tooltipContent = `${i+1}: ${stoprow.stop_name}`;
                 var tooltipOptions = {permanent:false, direction:'right', offset:[20,0] };
                 var stopmarker = L.marker([lat,lon], { 
                     icon: L.divIcon({
                         className: `stop-divicon`,
-                        iconSize: [25, 25],
+                        iconSize: stopIconSize,
                         html: ( parseInt(i)+1 )
                     }) 
                 })
@@ -181,18 +228,18 @@ function loadJson() {
                 stopmarker.properties = stoprow;
                 stopmarker.addTo(stopsLayer[dir]);
                 map[dir].fitBounds(stopsLayer[dir].getBounds(), {padding:[20,20], maxZoom:15});
+
             }); // end of mappedList loop
 
-            var polyOptions = { color:'blue' };
-            var poly = L.polyline(lineCollector, polyOptions).addTo(lineLayer[dir]);
-            
-            var spacer = Array(5).join(" "); // repeater. from https://stackoverflow.com/a/1877479/4355695
-            // putting arrows. See https://github.com/makinacorpus/Leaflet.TextPath
-            poly.setText(spacer+'►'+spacer, {repeat: true, offset: 7, attributes: {'font-weight': 'bold', 'font-size': '24', 'fill':'blue'}})
-
+            drawLine();
+            //console.log(listHTML);
+            $(`#stopsList${dir}`).html(listHTML);
+            $(`#fromTo`).html(`<h5 align="center">${fromStop}<br>to<br>${toStop}</h5>`);
         }); // end of 0,1 direction loop
+        
+        if(data['serviceNumbers']) if(data['serviceNumbers'].length) $(`.service`).html(`Service numbers: ${data['serviceNumbers'].join(', ')}`); // show service numbers if present.
 
-        // L.tooltipLayout.initialize(map0, null);
+        // L.tooltipLayout.initialize(map0, null); // feature discarded 
     }); // end of getJSON
 }
 
@@ -208,14 +255,35 @@ function bgChoices() {
     $('#background').html(content);
 }
 
-function setDimensions(value) {
-    var dims = value.split('x');
-    var h = parseInt(dims[1]);
-    var w = parseInt(dims[0]);
-    $('.map').css('height',`${h}px`);
-    $('.map').css('width',`${w}px`);
+function changeDimensions(reset=false) {
+
+    var w = parseInt($('#width').val());
+    var h = parseInt($('#height').val());
+    var ratio = parseFloat($('#ratio').val());
+
+    if(reset) {
+        w = 1000; $('#width').val(w);
+        h = 1450; $('#height').val(h);
+        ratio = 69; $('#ratio').val(ratio);
+    }
+
+    $('.page').css('width',`${w}px`);
+    
+    let mapH = parseInt( (h*ratio/100).toFixed(0));
+    let stopsH = h - mapH;
+    $('.map').css('height',`${mapH}px`);
+    $('.stopsPart').css('height',`${stopsH}px`);
+    console.log(w,h,mapH,stopsH);
+
     // there, that resizes the map.
-    // to do: zoom/pan to fit the route if a route is loaded.
+
+        map[0].invalidateSize();
+        // from https://stackoverflow.com/questions/24412325/resizing-a-leaflet-map-on-container-resize 
+        //Checks if the map container size changed and updates the map if so — call it after you've changed the map size dynamically
+        
+        map[0].fitBounds(stopsLayer[0].getBounds(), {padding:[5,5], maxZoom:17});
+        console.log(stopsLayer[0].getBounds());
+    
 }
 
 function downloadURI( img, name) {
@@ -241,12 +309,28 @@ function changeColor() {
     var color = $("#color").val();
     var fontColor = $("#fontColor").val();
     lineLayer[0].setStyle( {color:color} );
-    lineLayer[1].setStyle( {color:color} );
+    //lineLayer[1].setStyle( {color:color} );
     $('.stop-divicon').css('background-color',color);
     $('.stop-divicon').css('color',fontColor);
     // re-do setText for arrows
-    var spacer = Array(5).join(" "); // repeater. from https://stackoverflow.com/a/1877479/4355695
-    lineLayer[0].setText(spacer+'►'+spacer, {repeat: true, offset: 7, attributes: {'font-weight': 'bold', 'font-size': '24', 'fill':color}})
-    lineLayer[1].setText(spacer+'►'+spacer, {repeat: true, offset: 7, attributes: {'font-weight': 'bold', 'font-size': '24', 'fill':color}})
+    drawLine(color);
+    /*
+    var spacer = Array(3).join(" "); // repeater. from https://stackoverflow.com/a/1877479/4355695
+    lineLayer[0].setText(spacer+'>'+spacer, {repeat: true, offset: 6, attributes: {'font-weight': 'bold', 'font-size': '18', 'fill':color}}) // ►
+    */
 
+}
+
+function drawLine(color='black') {
+    lineLayer[0].clearLayers();
+    var polyOptions = { color:color };
+    var poly = L.polyline(globalLineCollector, polyOptions).addTo(lineLayer[0]);
+
+    var spacer = Array(3).join(" "); // repeater. from https://stackoverflow.com/a/1877479/4355695
+    // putting arrows. See https://github.com/makinacorpus/Leaflet.TextPath
+    poly.setText(spacer+'>'+spacer, {repeat: true, offset: 6, attributes: {'font-weight': 'bold', 'font-size': '18', 'fill':color}}) // ►
+}
+
+function zoomFit() {
+    map[0].fitBounds(stopsLayer[0].getBounds(), {padding:[5,5], maxZoom:17});
 }

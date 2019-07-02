@@ -81,11 +81,13 @@ function loadJson() {
         clearEverything();
         routeParts = globalRoute.split('/');
         $('.routeMeta').html(`Depot:${routeParts[0]} | filename:${routeParts[1]} | Route Name : ${data.routeName} | <a href="routeMap.html?route=${globalRoute}" target="_blank">edit map</a> | <a href="routeEntry.html?route=${globalRoute}" target="_blank">edit sequence</a>`);
+        
+        if(data['serviceNumbers']) if(data['serviceNumbers'].length) $(`.service`).val(data['serviceNumbers'].join(', ')); // show service numbers if present.
         $('#saveButtonRoute').html(`for ${globalRoute}`);
 
         // legacy stuff
-        if(data['timings0']) $('.onward .trip_times').val(cleanList(data['timings0']).join(', '));
-        if(data['timings1']) $('.return .trip_times').val(cleanList(data['timings1']).join(', '));
+        if(data['timings0']) $('.onward .trip_times').val(cleanTimeList(data['timings0']).join(', '));
+        if(data['timings1']) $('.return .trip_times').val(cleanTimeList(data['timings1']).join(', '));
         if(data['timings0'] || data['timings1']) $('#legacy_warning').html('Note: legacy timings data loaded - this may be inaccurate.');
 
         var timingsFlag = false; var frequencyFlag = false;
@@ -149,7 +151,7 @@ function saveTimings() {
 
         data[`timeStructure_${dir}`] = {};
         let a = data[`timeStructure_${dir}`];
-        a['trip_times'] = cleanList($(`${dirclass} .trip_times`).val());
+        a['trip_times'] = cleanTimeList($(`${dirclass} .trip_times`).val());
         $(`${dirclass} .trip_times`).val(a[`trip_times`].join(', '));
 
         // frequency
@@ -168,10 +170,14 @@ function saveTimings() {
         a['duration'] = cleanTime($(`${dirclass} .duration`).val());
         $(`${dirclass} .duration`).val(a[`duration`]);
         
-        console.log(a);
+        //console.log(a);
         
     });
-   
+
+    // 26.6.19 : Enhancemnt: capture service numbers
+    data['serviceNumbers'] =  cleanList($(`.service`).val());
+    $(`.service`).val(data['serviceNumbers'].join(', '));
+
     console.log(data);
     console.log('saveTimings(): filename is:',globalRoute);
 
@@ -195,7 +201,7 @@ function saveTimings() {
 //#####################################
 // Functions
 
-function cleanList(timingsHolder) {
+function cleanTimeList(timingsHolder) {
     if(!timingsHolder) return [];
     if(!timingsHolder.length) return [];
     // regex to match multiple and even recurring separators and replace with just the | separator
@@ -207,6 +213,21 @@ function cleanList(timingsHolder) {
         if(cpart.length) trip_times.push(cpart);
     }
     return trip_times;
+}
+
+function cleanList(text) {
+    // modelled along cleanTimeList()
+    if(!text) return [];
+    if(!text.length) return [];
+    // regex to match multiple and even recurring separators and replace with just the | separator
+    // from https://stackoverflow.com/a/34936253/4355695
+    text = text.replace(/[\r\n\x0B\x0C\u0085\u2028\u2029\t, |]+/g,"|");
+    let serviceNums = [];
+    for( let part of text.split('|')) {
+        let cpart = part// .replace(/[ ]+/g,""); // zap spaces   
+        if(cpart.length) serviceNums.push(cpart);
+    }
+    return serviceNums;
 }
 
 function cleanTime(timeStr) {
@@ -246,7 +267,7 @@ function cleanTime(timeStr) {
 }
 
 function trip_times_copy() {
-    let cleanTimes = cleanList($('.onward .trip_times').val());
+    let cleanTimes = cleanTimeList($('.onward .trip_times').val());
     $('.trip_times').val(cleanTimes);
 }
 
