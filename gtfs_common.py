@@ -36,13 +36,14 @@ def timeFormat(x):
         justnum = holder1[0]
         if justnum == '':
             # blank string
-            return False
+            return ''
         if len(justnum) in [3,4]:
             holder1 = [ justnum[:-2], justnum[-2:] ]
             print("Special case: {} becomes {}".format(justnum,holder1))
         else:
-            print('{} is an invalid time string.'.format(x))
-            raise ValueError("'{}' is an invalid time string.".format(x))
+            print('{} is an invalid time string. Skipping it.'.format(x))
+            # raise ValueError("'{}' is an invalid time string.".format(x))
+            return ''
     hh = holder1[0].rjust(2,'0')
     mm = holder1[1].rjust(2,'0')
     if len(holder1) >= 3: ss = holder1[2].rjust(2,'0')
@@ -64,9 +65,9 @@ def time2secs(hhmmss):
     if len(holder1) < 2:
         print('{} is an invalid time string.'.format(hhmmss))
         raise ValueError("'{}' is an invalid time string.".format(hhmmss))
-    hh = int(holder1[0])
-    mm = int(holder1[1])
-    if len(holder1) >= 3: ss = int(holder1[2])
+    hh = int(float(holder1[0]))
+    mm = int(float(holder1[1]))
+    if len(holder1) >= 3: ss = int(float(holder1[2])) # taking precautions for cases like '0.0' - first parse float, then int
     else: ss = 0
     return (hh*3600 + mm*60 + ss)
 # test:
@@ -75,14 +76,15 @@ def time2secs(hhmmss):
 # print\( time2secs('00:05:34') )
 
 def secs2time(secs):
+    # data cleaning: secs must be int
+    secs = int(float(secs))
     hh = str(int(secs/3600)).rjust(2,'0')
     remaining = secs % 3600
     mm = str(int(remaining/60)).rjust(2,'0')
     ss = str(remaining % 60).rjust(2,'0')
-    
     return "{}:{}:{}".format(hh,mm,ss)
 # test
-# print\(secs2time(3453))
+# print(secs2time(3453))
 
 def timeDiff(t1,t2,formatted=True):
     diff = time2secs(t2) - time2secs(t1)
@@ -152,6 +154,28 @@ def timeEngine(first_trip_start,last_trip_start,trip_duration,num_trips):
 # cross midnight?
 # print\('crossing midnight example:\n',timeEngine('23:30', '01:10','01:00',5))
 
+def timeEngineFrequency(first_trip_start,last_trip_start,frequency,trip_duration):
+    # +24h if last time crosses midnight
+    if time2secs(last_trip_start) <= time2secs(first_trip_start):
+        last_trip_start = timeAdd(last_trip_start,24*60*60)
+    
+    headway = frequency
+    
+    first_trip_end = timeAdd(first_trip_start,time2secs(trip_duration))
+    last_trip_end = timeAdd(last_trip_start,time2secs(trip_duration))
+
+    num_trips = timeDiff(first_trip_start,last_trip_start,formatted=False) // headway
+
+    tripTimesArray = []
+    for n in range(num_trips):
+        start_time = timeAdd(first_trip_start,round(n*headway) )
+        end_time = timeAdd(first_trip_end,round(n*headway) )
+        tripTimesArray.append( [start_time,end_time] )
+    
+    # and add the last trip at end
+    tripTimesArray.append( [last_trip_start,last_trip_end] )
+
+    return tripTimesArray.copy()
 
 # In[12]:
 
@@ -160,7 +184,9 @@ def tripTimesProcess(timestr):
     timestr2 = timestr.replace(' ','|').replace(',','|')
     holder = [timeFormat(x) for x in timestr2.split('|') if len(x)]
     # print(holder)
-    return holder
+    # in case any element in holder is ''
+    holder2 = [x for x in holder if len(x)]
+    return holder2
 
 # test
 tripTimesProcess('05:15,05:50,06:15,06:35,07:55,08:35,09:30,10:05,10:25,11:40,12:35,13:20,14:15,14:40,15:30,16:20,17:05,17:30,18:25,18:45 ,19:10,20:50,21:10,21:45')

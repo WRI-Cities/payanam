@@ -1,0 +1,12 @@
+routes
+locked-routes
+reports
+logs
+gtfs
+
+
+routes-backup-30.7.19
+__pycache__
+routes-temp
+shelved
+datacleaning

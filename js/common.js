@@ -177,7 +177,7 @@ function checkCookie(change=false) {
         $('#keyStatus').html(`Logged in as ${globalName}, ${globalEmail}, access level: ${globalAccess}. <small><button onclick="checkCookie(true)">Change user</button></small>`);
     }).fail(function(err) {
         console.log('keyCheck GET call failed.', err.responseText);
-        $('#keyStatus').html(err.responseText + '<small><button onclick="checkCookie(true)">Change user</button></small>');
+        $('#keyStatus').html('Not logged in. <small><button onclick="checkCookie(true)">Change user</button></small>');
     });
     
     //alert("Welcome again. Your api key is: " + globalApiKey + '\nClear your cookies to use another one.');
@@ -215,6 +215,9 @@ function topMenu() {
       </li>
       <li class="nav-item">
       <a class="nav-link" href="print.html">Print</a>
+      </li>
+      <li class="nav-item">
+      <a class="nav-link" href="stops.html">Stops</a>
       </li>
 
     </ul>
@@ -369,6 +372,9 @@ function loadDefaults(callbackFlag=false, callbackFunc=null) {
     });
 
 }
+
+
+
 
 // #########################
 // GRAYEYARD

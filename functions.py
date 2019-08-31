@@ -697,7 +697,6 @@ def saveDataEntryRoute(filename,data={}, key=False):
         routeD['extra1'] = data.get('extra1','')
         changesMade = True
     
-
     # and now we proceed to <gulp> rewrite the stop sequences!
     # don't worry, backups happening. Damn gotta have an easy way to restore backups..
 
@@ -742,7 +741,7 @@ def saveDataEntryRoute(filename,data={}, key=False):
 
     
     # logmessage(json.dumps(routeD, indent=2))
-
+    
     # ''' # uncomment when ready
     if changesMade and key:
         info = userInfo(key)

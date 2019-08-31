@@ -22,19 +22,19 @@ var lineLayer = new L.layerGroup();
 // Initiate Leaflet MAP
 // background layers, using Leaflet-providers plugin. See https://github.com/leaflet-extras/leaflet-providers
 var OSM = L.tileLayer.provider('OpenStreetMap.Mapnik');
-var MBlight = L.tileLayer.provider('MapBox', {id: 'nikhilsheth.m0mmobne', accessToken: MBaccessToken });
-var MBdark = L.tileLayer.provider('MapBox', {id: 'nikhilsheth.jme9hi44', accessToken: MBaccessToken });
-var MBstreets = L.tileLayer.provider('MapBox', {id: 'nikhilsheth.m0mlpl2d', accessToken: MBaccessToken });
-var MBsatlabel = L.tileLayer.provider('MapBox', {id: 'nikhilsheth.m0mmaa87', accessToken: MBaccessToken });
-var OSMIndia = L.tileLayer.provider('MapBox', {id: 'openstreetmap.1b68f018', accessToken: MBaccessToken });
+var cartoVoyager = L.tileLayer.provider('CartoDB.VoyagerLabelsUnder');
+var cartoPositron = L.tileLayer.provider('CartoDB.Positron');
+var cartoDark = L.tileLayer.provider('CartoDB.DarkMatter');
+var esriWorld = L.tileLayer.provider('Esri.WorldImagery');
 var gStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{maxZoom: 20, subdomains:['mt0','mt1','mt2','mt3']});
 var gHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{maxZoom: 20, subdomains:['mt0','mt1','mt2','mt3']});
-var baseLayers = { "OpenStreetMap.org" : OSM, "OpenStreetMap.IN": OSMIndia, "Streets": MBstreets, "Satellite": MBsatlabel, "Light": MBlight, "Dark" : MBdark, "gStreets": gStreets, "gHybrid": gHybrid };
+
+var baseLayers = { "CartoDB Voyager":cartoVoyager, "OpenStreetMap.org" : OSM, "CartoDB Light": cartoPositron, "CartoDB Dark": cartoDark, "ESRI Satellite": esriWorld, "gStreets": gStreets, "gHybrid": gHybrid };
 
 var map = new L.Map('map', {
 	center: STARTLOCATION,
 	zoom: 10,
-	layers: [MBlight],
+	layers: [cartoPositron],
 	scrollWheelZoom: true,
 	maxZoom: 20
 });

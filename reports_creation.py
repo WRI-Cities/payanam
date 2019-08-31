@@ -90,6 +90,7 @@ def churnJsons(foldername):
     for root, subdirs, files in os.walk(foldername):
         logmessage('\n',root)
         files = [x for x in files if x.endswith('.json')]
+        files.sort() # always sort!
         logmessage(files)
 
         # finding depot - this changes after rationalization on 8.1.19, note.
@@ -105,14 +106,14 @@ def churnJsons(foldername):
         if folder == 'AAA' : continue
         # if folder not in ['RN1','MI2'] : continue # development
 
-        for file in files:
-            data = json.load(open(os.path.join(root,file),'r'), object_pairs_hook=OrderedDict)
+        for fileName in files:
+            data = json.load(open(os.path.join(root,fileName),'r'), object_pairs_hook=OrderedDict)
             routeRow = OrderedDict()
             points = []
             
             routeRow['workStatus'] = 'working' if foldername == routesFolder else 'locked'
             routeRow['folder'] = folder
-            routeRow['jsonFile'] = file
+            routeRow['jsonFile'] = fileName
             routeRow['depot'] = folderDepot
             routeRow['routeName'] = data.get('routeName','')
             routeRow['routeLongName'] = data.get('routeLongName','')
@@ -140,7 +141,7 @@ def churnJsons(foldername):
 
                     row['workStatus'] = 'working' if foldername == routesFolder else 'locked'
                     row['folder'] = folder
-                    row['jsonFile'] = file
+                    row['jsonFile'] = fileName
 
                     row['depot'] = folderDepot # override if any
                     row['routeName'] = routeRow['routeName']
@@ -183,7 +184,12 @@ def churnJsons(foldername):
             # 27.6.19 Service numbers
             routeRow['service'] = ','.join(data.get('serviceNumbers',[]))
             
-            logmessage(root,file)
+            # 3.8.19 Starting and ending stops in UP direction
+            if len(data.get('stopsArray0',[])):
+                routeRow['from'] = data.get('stopsArray0',[])[0]['stop_name']
+                routeRow['to'] = data.get('stopsArray0',[])[-1]['stop_name']
+
+            logmessage(root,fileName)
             routesCollector.append(routeRow.copy())
             
         # end of direction loop
@@ -259,7 +265,7 @@ def groupEmALL(x):
 
 uniqueDF = df.groupby(['zap']).apply(groupEmALL).reset_index()
 uniqueDF.to_csv(os.path.join(reportsFolder,'stops_all_unique.csv'), index_label='sr')
-logmessage('Created stops_all_unique.csv, {} entries.'.format( len(uniqueDF) ))
+logmessage('Created stops_all_unique.csv, {} entries.'.format( len(uniqueDF) )) # note: this is by name and not by lat-longs.
 
 #### 
 # manually mapped stops
@@ -400,7 +406,7 @@ statsCollector['stops_automapped_unique'] = len(uniqueAutoDF)
 times.append(time.time())
 logmessage("Stops work took {} seconds.".format(round(times[-1]-times[-2],2)))
 
-#######
+##############################################
 # get unique locations, unique manually mapped locations
 # locations_manual
 # locations_automapped : if this is more then it means stops reconcilliation has happened and re-auto-mapping is due.
@@ -414,10 +420,27 @@ locations_autoDF.to_csv(os.path.join(reportsFolder,'locations_auto.csv'), index_
 logmessage('Created locations_auto.csv, {} entries.'.format( len(locations_autoDF) ))
 statsCollector['locations_auto'] = len(locations_autoDF)
 
+# 4.8.19 : New location report reqd for frontend stops map page:
+# ALL stops, unique'd by location. but ALL. and carry routes info
+df['depot::route'] = df.apply(lambda y: '{}::{}'.format(y['depot'],y['routeName']), axis=1 )
+def group_stops_location(x):
+    oneStop = OrderedDict({
+        'stop_name': listORone(x['stop_name']),
+        'count': len(x),
+        'routes' : listORone(x['depot::route']),
+        'num_routes' : len(x['depot::route'].unique()),
+        'num_depots': len(x['depot'].unique())
+    })
+    return pd.Series(oneStop)
+locations_allDF = df.groupby(['stop_lat','stop_lon']).apply(group_stops_location).reset_index().sort_values(['stop_name','num_routes'], ascending=[True,False]).copy().reset_index(drop=True)
+cols_locations_all = ['stop_name','stop_lat','stop_lon','count','num_routes','num_depots','routes']
+locations_allDF.to_csv(os.path.join(reportsFolder,'locations_all.csv'), index_label='sr', columns=cols_locations_all)
+logmessage('Created locations_all.csv, {} entries.'.format( len(locations_allDF) ))
+
 times.append(time.time())
 logmessage("Location-level work took {} seconds.".format(round(times[-1]-times[-2],2)))
 
-############
+#######################################
 # Next Level : Condense to route-wise rows
 # Na, we just assign vals to the columns
 
@@ -476,7 +499,8 @@ statsCollector['routes_locked'] = len(dfLocked)
 
 # Q: Which working routes have had some mapping done, and what is the extent of that mapping?
 
-dfWorking = routesDF[routesDF.workStatus== 'working'].copy().sort_values(['hull','jsonFile'], ascending=[False,True]).reset_index(drop=True)
+# dfWorking = routesDF[routesDF.workStatus== 'working'].copy().sort_values(['hull','jsonFile'], ascending=[False,True]).reset_index(drop=True)
+dfWorking = routesDF[routesDF.workStatus== 'working'].copy().sort_values(['folder','jsonFile'], ascending=[True,True]).reset_index(drop=True)
 
 dfWorking.to_csv(os.path.join(reportsFolder,'routes_inprogress.csv'), index_label='sr')
 logmessage('Created routes_inprogress.csv, {} entries.'.format( len(dfWorking) ))

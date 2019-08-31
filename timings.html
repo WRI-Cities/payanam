@@ -82,6 +82,7 @@ Choose a route: <select id="jsonSelect"></select> &nbsp;&nbsp;
     <ul>
     <li><a href="#tab1">1. Trip Start Times</a></li>
     <li><a href="#tab2">2. Frequency</a></li>
+    
     </ul>
 
     <!-- 1 ############################-->
@@ -90,6 +91,7 @@ Choose a route: <select id="jsonSelect"></select> &nbsp;&nbsp;
         <h5>Onward: <small><span class="fromTo"></span></small></h5>
         <p>Trip start times:<br>
         <textarea class="trip_times" rows=5></textarea></p>
+        <p align="right"><small><span id="swapStatus"></span></small> &nbsp; <button onclick="swapTimings()"><- Swap -></button></p>
     </div><div class="col-md-4 return">
         <h5>Return: <small><span class="fromTo"></span></small></h5>
         <p>Trip start times:<br>
@@ -112,6 +114,7 @@ Choose a route: <select id="jsonSelect"></select> &nbsp;&nbsp;
     
     <!-- 2 ############################-->
     <div id="tab2"><!-- Frequency -->
+
     <div class="row"><div class="col-md-4 onward">
         <h5>Onward: <small><span class="fromTo"></span></small></h5>
         <p>First Trip: <input class="first_trip_start hhmm" placeholder="hh:mm"></p>

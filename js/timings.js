@@ -21,7 +21,7 @@ $(document).ready(function() {
     
     loadDefaults();
     loadJsonsList();
-
+    
     $('#jsonSelect').on('change', function (e) {
 		
 		if( this.value == '') { 
@@ -52,6 +52,7 @@ $(document).ready(function() {
     // check URLParams if a route is supposed to be loaded
     if(URLParams['route']) {
         console.log('Auto-loading route:',URLParams['route']);
+        $('.routeMeta').html(`Auto-loading route: ${URLParams['route']}, please wait..`);
         globalRoute = URLParams['route'];
         loadJson();
         $('#jsonSelect').val(globalRoute);
@@ -68,7 +69,38 @@ function loadJsonsList() {
         $('#jsonSelect').html(data);
         $('#jsonSelect').trigger('chosen:updated'); 
         $('#jsonSelect').chosen({disable_search_threshold: 1, search_contains:true, width:200, placeholder_text_single:'Pick a route'});
+	}).fail(function(err) {
+		loadRoutesCSV();
 	});
+}
+
+function loadRoutesCSV() {
+    // alternative to loadJsonsList() function, for payanam-lite
+    // to do: load reports/routes.csv, and generate the routes list from there
+    var filename = 'reports/routes.csv';
+    console.log('Loading',filename);
+    Papa.parse(`${filename}?_=${(new Date).getTime()}`, {
+    download: true,
+    header: true,
+        skipEmptyLines: true,
+        dynamicTyping: false, // this reads numbers as numerical; set false to read everything as string
+        complete: function(results, file) {
+            var returnHTML = '<option value="">Select one</option>';
+            var depotsList = [];
+            results.data.forEach(r => {
+                if(!depotsList.includes(r.folder)) {
+                    returnHTML += `<optgroup label="${r.folder}">`;
+                    depotsList.push(r.folder);
+                }
+                returnHTML += `<option value="${r.folder}/${r.jsonFile}">${r.routeName}</option>`;
+            });
+            
+            //console.log(returnHTML);
+            $('#jsonSelect').html(returnHTML);
+            $('#jsonSelect').trigger('chosen:updated'); 
+            $('#jsonSelect').chosen({disable_search_threshold: 1, search_contains:true, width:200, placeholder_text_single:'Pick a route'});
+        }
+    });
 }
 
 function loadJson() {
@@ -327,3 +359,20 @@ function defaultFrequency() {
     $('.sec').val(defaults['timeDefaults']['sec']);
 }
 
+function swapTimings() {
+    //let dirclass = (dir == '0')? '.onward' : '.return'
+    $('#swapStatus').html('');
+    var left = $('.onward .trip_times').val();
+    var right = $('.return .trip_times').val();
+
+    $('.onward .trip_times').fadeOut("fast", function() {
+        $('.onward .trip_times').val(right);
+        $('.onward .trip_times').fadeIn("fast");
+        $('#swapStatus').html('Swapped onward and return timings.');
+    });
+    
+    $('.return .trip_times').fadeOut("fast", function() {
+        $('.return .trip_times').val(left);
+        $('.return .trip_times').fadeIn("fast");
+    });
+}

@@ -263,19 +263,19 @@ var databankTable = new Tabulator("#databankTable", {
 /* 3. Initiate map */
 // background layers, using Leaflet-providers plugin. See https://github.com/leaflet-extras/leaflet-providers
 var OSM = L.tileLayer.provider('OpenStreetMap.Mapnik');
-var MBlight = L.tileLayer.provider('MapBox', {id: 'nikhilsheth.m0mmobne', accessToken: MBaccessToken });
-var MBdark = L.tileLayer.provider('MapBox', {id: 'nikhilsheth.jme9hi44', accessToken: MBaccessToken });
-var MBstreets = L.tileLayer.provider('MapBox', {id: 'nikhilsheth.m0mlpl2d', accessToken: MBaccessToken });
-var MBsatlabel = L.tileLayer.provider('MapBox', {id: 'nikhilsheth.m0mmaa87', accessToken: MBaccessToken });
-var OSMIndia = L.tileLayer.provider('MapBox', {id: 'openstreetmap.1b68f018', accessToken: MBaccessToken });
+var cartoVoyager = L.tileLayer.provider('CartoDB.VoyagerLabelsUnder');
+var cartoPositron = L.tileLayer.provider('CartoDB.Positron');
+var cartoDark = L.tileLayer.provider('CartoDB.DarkMatter');
+var esriWorld = L.tileLayer.provider('Esri.WorldImagery');
 var gStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{maxZoom: 20, subdomains:['mt0','mt1','mt2','mt3']});
 var gHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{maxZoom: 20, subdomains:['mt0','mt1','mt2','mt3']});
-var baseLayers = { "OpenStreetMap.org" : OSM, "OpenStreetMap.IN": OSMIndia, "Streets": MBstreets, "Satellite": MBsatlabel, "Light": MBlight, "Dark" : MBdark, "gStreets": gStreets, "gHybrid": gHybrid };
+
+var baseLayers = { "CartoDB Voyager":cartoVoyager, "OpenStreetMap.org" : OSM, "CartoDB Light": cartoPositron, "CartoDB Dark": cartoDark, "ESRI Satellite": esriWorld, "gStreets": gStreets, "gHybrid": gHybrid };
 
 var map = new L.Map('map', {
 	center: STARTLOCATION,
 	zoom: 10,
-	layers: [gStreets],
+	layers: [cartoVoyager],
 	scrollWheelZoom: true,
 	maxZoom: 20,
 });
@@ -409,12 +409,11 @@ $(document).ready(function() {
 	}
 
 	loadRoutesList(); // defined in common.js.. 4.2.19 NOPE moved it back here! want to put at end of it a way to auto-load route if specified
-
+	
 	let fileInput = document.getElementById('gpxFile');
 	fileInput.addEventListener('change', function(e) {
 		gpxUpload();
 	});
-	
 
 	// populate confidence dropdown
 	var confidenceCollector = '';
@@ -451,6 +450,14 @@ $(document).ready(function() {
 	loadDefaults(callbackFlag=true,callback=loadBanksBackground);
 	//setTimeout(function(){ loadBanksBackground(); }, 5000); // run 5 secs after page loads
 	
+	// check URLParams if a route is supposed to be loaded
+	if(URLParams['route']) {
+		console.log('Auto-loading route:',URLParams['route']);
+		globalRoute = URLParams['route'];
+		loadRoute(false);
+		$('#routeSelect').val(globalRoute);
+		$('#routeSelect').trigger('chosen:updated');
+	}
 });
 
 //#####################################
@@ -462,16 +469,38 @@ function loadRoutesList() {
 		$('#routeSelect').html(data);
 		$('#routeSelect').trigger('chosen:updated'); 
 		$('#routeSelect').chosen({disable_search_threshold: 1, search_contains:true, width:200, height: 400, placeholder_text_single:'Pick a route'});
-
-		// check URLParams if a route is supposed to be loaded
-		if(URLParams['route']) {
-			console.log('Auto-loading route:',URLParams['route']);
-			globalRoute = URLParams['route'];
-			loadRoute(false);
-			$('#routeSelect').val(globalRoute);
-			$('#routeSelect').trigger('chosen:updated');
-		}
+	}).fail(function(err) {
+		loadRoutesCSV();
 	});
+}
+
+function loadRoutesCSV() {
+    // alternative to loadRoutesList() function, for payanam-lite
+    // to do: load reports/routes.csv, and generate the routes list from there
+    var filename = 'reports/routes.csv';
+    console.log('Loading',filename);
+    Papa.parse(`${filename}?_=${(new Date).getTime()}`, {
+    download: true,
+    header: true,
+        skipEmptyLines: true,
+        dynamicTyping: false, // this reads numbers as numerical; set false to read everything as string
+        complete: function(results, file) {
+            var returnHTML = '<option value="">Select one</option>';
+            var depotsList = [];
+            results.data.forEach(r => {
+                if(!depotsList.includes(r.folder)) {
+                    returnHTML += `<optgroup label="${r.folder}">`;
+                    depotsList.push(r.folder);
+                }
+                returnHTML += `<option value="${r.folder}/${r.jsonFile}">${r.routeName}</option>`;
+            });
+            
+            //console.log(returnHTML);
+            $('#routeSelect').html(returnHTML);
+            $('#routeSelect').trigger('chosen:updated'); 
+            $('#routeSelect').chosen({disable_search_threshold: 1, search_contains:true, width:200, placeholder_text_single:'Pick a route'});
+        }
+    });
 }
 
 function loadRoute(firstTime=true) {

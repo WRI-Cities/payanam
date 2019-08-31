@@ -50,7 +50,7 @@ width: 100%;
     border-bottom: 1px solid black;
 }
 */
-.stop-divicon {
+.stop-divicon0, .stop-divicon1 {
 	border-radius: 100%;
 	color: white;
 	padding-top: 1px;
@@ -75,12 +75,12 @@ width: 100%;
     padding-right: 10px;
 }
 
-#stopsListContainer ul{
+.stopsListContainer ul{
     margin:0; padding:0;
     list-style: none;
 }
 
-#stopsListContainer {
+.stopsListContainer {
   -webkit-column-width: 175px;
   -moz-column-width: 175px;
   -o-column-width: 175px;
@@ -106,7 +106,14 @@ width: 100%;
     body{
         width: 21cm;
         height: 29.7cm;
-    }    
+    }
+    .page {
+        page-break-after: always;
+    }
+}
+
+select.background {
+    height: 2em;
 }
 
 </style>
@@ -117,20 +124,38 @@ width: 100%;
 <div id="topMenu"></div>
 
 
-<div class="page">
+<div class="page dir0">
 <div id="map0" class="map nopad"></div>
 <div style="clear: both;"></div>
 <div class="stopsPart">
 <br>
-<small><div id="stopsListContainer">
-<ul id = "stopsList0">
+<small><div class="stopsListContainer">
+<ul class= "stopsList">
 </ul>
 </div></small>
 <br>
+<small><p class="timings"></p></small>
 <small><p class="service"></p></small>
+</div></div>
+
+<div class="no-print">
+<br><hr><br>
 </div>
 
-</div>
+<div class="page dir1">
+<div id="map1" class="map nopad"></div>
+<div style="clear: both;"></div>
+<div class="stopsPart">
+<br>
+<small><div class="stopsListContainer">
+<ul class= "stopsList">
+</ul>
+</div></small>
+<br>
+<small><p class="timings"></p></small>
+<small><p class="service"></p></small>
+</div></div>
+
 <p class="no-print"><br><br>Press Ctrl+P to Print the contents of the box above.<br>
 Extra things (like top menu, links) will be omitted from the printout.<br>
 Make sure to check on the "Background graphics" option in print settings.

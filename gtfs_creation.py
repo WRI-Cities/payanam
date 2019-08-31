@@ -8,6 +8,8 @@
 # Days of week : assume all days
 # 
 # Timings : take the timings if they exist, else take default timings defined in config/config.json
+# 
+# v5 : Let's do incremental route-wise saving of stop_times.txt instead of accumulating for each route. AppendOrCreate.
 
 # In[1]:
 
@@ -32,7 +34,7 @@ t1 = time.time()
 
 
 DEV = False
-DEVLimit = 10
+DEVLimit = 20
 
 
 # In[4]:
@@ -44,7 +46,7 @@ try:
     # moving gtfsFolder declaration here because we're using a different path for gtfs output if running in python notebook
 except NameError as e:
     root = '../payanam'
-    gtfsFolder = 'gtfs/'
+    gtfsFolder = 'gtfs-test/'
 
 reportsFolder = os.path.join(root,'reports/')
 configFile = os.path.join(root,'config/','config.json')
@@ -69,11 +71,25 @@ config
 # create folders if they don't exist
 for folder in [gtfsFolder]:
     if not os.path.exists(folder):
-        os.makedirs(folder)
+        os.makedirs(folder, exist_ok=True)
         print('Created',folder)
 
 
 # In[7]:
+
+
+# 6.8.19 : stop_times incremental: if stop_times.txt exists, then delete it as we want to create a fresh one
+if os.path.exists(os.path.join(gtfsFolder,'stop_times.txt')):
+    print("Found an existing stop_times.txt in gtfs output path so removing it.")
+    os.remove(os.path.join(gtfsFolder,'stop_times.txt'))
+    
+# oh well lets delete any gtfs.zip also if existing
+if os.path.exists(os.path.join(gtfsFolder,'gtfs.zip')):
+    print("Found an existing gtfs.zip in gtfs output path so removing it.")
+    os.remove(os.path.join(gtfsFolder,'gtfs.zip'))
+
+
+# In[8]:
 
 
 default_trip_times = gtfsC.tripTimesProcess( config.get('timeDefaults',{}).get('trip_times','10:00') )
@@ -84,7 +100,7 @@ default_trip_times
 # ## functions
 # which can't be moved out yet because they're depending on one of the folder paths declared here.
 
-# In[8]:
+# In[9]:
 
 
 def logmessage( *content ):
@@ -102,7 +118,7 @@ def logmessage( *content ):
     f.close()
 
 
-# In[9]:
+# In[10]:
 
 
 def backup(filepath):
@@ -127,7 +143,17 @@ def backup(filepath):
     return backupSuffix
 
 
-# In[10]:
+# In[11]:
+
+
+def appendOrCreate(targetDF,targetCSV):
+    if os.path.exists(os.path.join(targetCSV)):
+        targetDF.to_csv(os.path.join(targetCSV), mode='a', header=False, index=False)
+    else:
+        targetDF.to_csv(os.path.join(targetCSV), index=False)
+
+
+# In[12]:
 
 
 '#'*70
@@ -135,42 +161,26 @@ def backup(filepath):
 
 # ## load up the main input files
 
-# In[11]:
-
+# In[13]:
 
 
 stops_src = pd.read_csv(os.path.join(reportsFolder,stopsFile),dtype=str).fillna('')
 stops_src.head()
 
 
-# In[12]:
+# In[14]:
 
 
 routes_src = pd.read_csv(os.path.join(reportsFolder,routesFile),dtype=str).fillna('')
 routes_src.head()
 
 
-# In[13]:
+# In[15]:
 
 
 # DEVine intervention
 if DEV:
-    routes_src = routes_src.iloc[:DEVLimit]
-
-
-# In[14]:
-
-
-'#'*70
-
-
-# ## agency.txt
-
-# In[15]:
-
-
-agencyDF = pd.DataFrame(data={'agency_id':['TSRTC_HYD'],'agency_name':['Telangana State Road Transport Corporation (Hyderabad local bus)'],    'agency_url': ['http://tsrtconline.in'], 'agency_timezone':['Asia/Kolkata']}) 
-agencyDF
+    routes_src = routes_src.iloc[655:655+DEVLimit]
 
 
 # In[16]:
@@ -179,9 +189,24 @@ agencyDF
 '#'*70
 
 
-# ## calendar.txt
+# ## agency.txt
 
 # In[17]:
+
+
+agencyDF = pd.DataFrame(data={'agency_id':['TSRTC_HYD'],'agency_name':['Telangana State Road Transport Corporation (Hyderabad local bus)'],    'agency_url': ['http://tsrtconline.in'], 'agency_timezone':['Asia/Kolkata']}) 
+agencyDF
+
+
+# In[18]:
+
+
+'#'*70
+
+
+# ## calendar.txt
+
+# In[19]:
 
 
 calendarDF = pd.DataFrame(data={"service_id":["WK","SA","SU","ALL"],    "monday":['1','0','0','1'], "tuesday":['1','0','0','1'], "wednesday":['1','0','0','1'],    "thursday":['1','0','0','1'], "friday":['1','0','0','1'],    "saturday":['0','1','0','1'], "sunday":['0','0','1','1']})
@@ -190,7 +215,7 @@ calendarDF['end_date'] = 20221231
 calendarDF
 
 
-# In[18]:
+# In[20]:
 
 
 '#'*70
@@ -202,22 +227,36 @@ calendarDF
 # route_id : {folder}:{jsonFile minus the .json}  
 # trip_id : {route_id}:d{direction}:n for 1..n 
 
-# In[19]:
+# In[21]:
 
 
 # mutate the routes file itself to make route.txt
-routes_src['route_id'] = routes_src.apply(lambda x: "{}:{}".format(x.folder,x.jsonFile[:-5]), axis=1)
+routes_src['route_id'] = routes_src.apply(lambda x: "{}::{}".format(x.folder,x.jsonFile[:-5]), axis=1)
 routes_src['route_type'] = '3'
+routes_src['route_long_name'] = routes_src.apply(lambda x: "{}, {} depot".format(x.routeName,x.folder), axis=1)
 
 
-# In[20]:
+# In[22]:
 
 
-routesDF = routes_src[['route_id','routeName','routeLongName','busType','route_type']].rename(index=str,    columns={'routeName':'route_short_name', 'routeLongName':'route_long_name','busType':'route_categories'})
+routes_src.head()
+
+
+# In[23]:
+
+
+print("Columns in routes.csv:",routes_src.columns)
+
+
+# In[24]:
+
+
+routesDF = routes_src[['route_id','routeName','route_long_name','busType','route_type']].rename(index=str,    columns={'routeName':'route_short_name','busType':'route_categories'})
+
 routesDF
 
 
-# In[21]:
+# In[25]:
 
 
 t2 = time.time()
@@ -229,7 +268,7 @@ logmessage("Starting + agency + calendar + routes took {} seconds.".format(round
 # - de-dupe by: zap name, stop_lat, stop_lon
 # - assign a stop_id to each such triplet
 
-# In[22]:
+# In[26]:
 
 
 stops_uniqueDF = stops_src[(stops_src.stop_lat!='') & (stops_src.stop_lon!='')]    [['stop_name','stop_lat','stop_lon','zap']]    .drop_duplicates(['stop_name','stop_lat','stop_lon'])    .sort_values(['zap','stop_lat']).copy().reset_index(drop=True)
@@ -237,13 +276,13 @@ logmessage(len(stops_uniqueDF))
 stops_uniqueDF.head()
 
 
-# In[23]:
+# In[27]:
 
 
 stops_uniqueDF['stop_id'] = '' # initiate column with blanks
 
 
-# In[24]:
+# In[28]:
 
 
 # to do next : assign stop_id's, store as stops.txt
@@ -258,26 +297,26 @@ for N in range(len(stops_uniqueDF) ) :
     stops_uniqueDF.at[N,'stop_id'] = stop_id
 
 
-# In[25]:
+# In[29]:
 
 
 stops_uniqueDF.sample(10)
 
 
-# In[26]:
+# In[30]:
 
 
 stopsDF = stops_uniqueDF[['stop_id','stop_name','stop_lat','stop_lon']]
 
 
-# In[27]:
+# In[31]:
 
 
 t3 = time.time()
 logmessage("Stops processing took {} seconds.".format(round(t3-t2,2)))
 
 
-# In[28]:
+# In[32]:
 
 
 '#'*70
@@ -288,25 +327,27 @@ logmessage("Stops processing took {} seconds.".format(round(t3-t2,2)))
 # - Timings: just the defaults for now
 # - have to check if a route doesn't have reverse direction then don't provision those trips
 
-# In[29]:
+# In[33]:
 
 
 # make route_id in the stops_src DF too
-stops_src['route_id'] = stops_src.apply(lambda x: "{}:{}".format(x.folder,x.jsonFile[:-5]), axis=1)
+stops_src['route_id'] = stops_src.apply(lambda x: "{}::{}".format(x.folder,x.jsonFile[:-5]), axis=1)
 
 
-# In[30]:
+# In[34]:
 
 
 tripsCollector = []
-stopTimesCollector = []
+
 oneDirList = [] # spinoff data : routes that have only one direction
 frequenciesCollector = []
 
 for rN, routeRow in routes_src.iterrows():
     route_id = routeRow['route_id']
-    print()
+    logmessage()
     logmessage(rN, route_id)
+    
+    stopTimesCollector = [] # 6.8.19: doing stop_times incrementally, so re-initiating this for every route.
     for direction_id in ['0','1']:
         # check for presence of entries
         
@@ -349,11 +390,11 @@ for rN, routeRow in routes_src.iterrows():
                 
             else:
                 # not even trip times, not even frequencies given. So, assume defaults
-                print("Route {}, direction {}: No timings data found so assuming default timings.".format(route_id,direction_id))
+                logmessage("Route {}, direction {}: No timings data found so assuming default timings.".format(route_id,direction_id))
                 this_trip_times = default_trip_times.copy()
         
         else:
-            print("Route {}, direction {}: Taking trip times.".format(route_id,direction_id))
+            logmessage("Route {}, direction {}: Taking trip times.".format(route_id,direction_id))
         
         # duration and speed: 
         # in absence of duration, use default speed to compute duration.
@@ -369,7 +410,7 @@ for rN, routeRow in routes_src.iterrows():
             
         tripTimesArray = gtfsC.timeEngineTrips(this_trip_times,this_duration)
         
-        if route_id == 'CNT:16A': print(tripTimesArray)
+        # if route_id == 'CNT::16A': print(tripTimesArray)
         
         logmessage("direction {}: distance: {} km. duration: {}. speed: {}".format(direction_id, this_distance, this_duration, this_speed))
         
@@ -391,6 +432,7 @@ for rN, routeRow in routes_src.iterrows():
             # make a df itself?
             # prep up this_sequence to be a stop_times type table
             # nah just iterate, lad
+            
             for seqN, seqRow in this_sequence.iterrows():
                 stRow = OrderedDict()
                 stRow['trip_id'] = trip_id
@@ -407,40 +449,50 @@ for rN, routeRow in routes_src.iterrows():
                 stRow['stop_sequence'] = seqN + 1
                 stRow['timepoint'] = '0'
                 stopTimesCollector.append(stRow.copy() )
-            
-            
-        
+                
+                # end of sequence / stop_times loop
+            # end of tripTimesArray loop
+        # end of direction_id loop
+    
+    # 6.8.19: incrementally store stop_times instead of waiting till end
+    stopTimesIncrDF = pd.DataFrame(stopTimesCollector)
+    appendOrCreate(stopTimesIncrDF, os.path.join(gtfsFolder,'stop_times.txt'))
+    logmessage("Wrote {} lines to stop_times.txt".format(len(stopTimesIncrDF)))
+    del stopTimesIncrDF
+    del stopTimesCollector
+    # end of route loop
 
 
-# In[31]:
+# In[35]:
 
 
 tripsDF = pd.DataFrame(tripsCollector)
 tripsDF.head(10)
 
 
-# In[32]:
+# In[36]:
 
 
 frequenciesDF = pd.DataFrame(frequenciesCollector)
 frequenciesDF.head()
 
 
-# In[33]:
+# In[37]:
 
 
-stopTimesDF = pd.DataFrame(stopTimesCollector)
-stopTimesDF.head(10)
+# stopTimesDF = pd.DataFrame(stopTimesCollector)
+# stopTimesDF.head(10)
+# 6.8.19 : changed to incremental instead of all
 
 
-# In[34]:
+# In[38]:
 
 
 t4 = time.time()
 logmessage("trips, frequencies and stop_times processing took {} seconds.".format(round(t4-t3,2)))
 
 
-# In[35]:
+# In[39]:
 
 
 '#'*70
@@ -448,7 +500,7 @@ logmessage("trips, frequencies and stop_times processing took {} seconds.".forma
 
 # ## saving out the files
 
-# In[36]:
+# In[40]:
 
 
 # first, check if there is already a gtfs.zip created, and if so, make backup
@@ -456,20 +508,20 @@ if os.path.exists(os.path.join(gtfsFolder,'gtfs.zip')):
     backup(os.path.join(gtfsFolder,'gtfs.zip'))
 
 
-# In[37]:
+# In[41]:
 
 
 os.path.join(gtfsFolder,'gtfs.zip')
 
 
-# In[38]:
+# In[42]:
 
 
 txtCollector = [] # collect the outputs in this so it's easier to zip them up la
 zf = zipfile.ZipFile(os.path.join(gtfsFolder,'gtfs.zip'), mode='w')
 
 
-# In[39]:
+# In[43]:
 
 
 # done! saving as agency.txt
@@ -478,7 +530,7 @@ logmessage('Created agency.txt')
 zf.write(os.path.join(gtfsFolder, 'agency.txt' ), arcname='agency.txt', compress_type=zipfile.ZIP_DEFLATED )
 
 
-# In[40]:
+# In[44]:
 
 
 # done! saving as calendar.txt
@@ -487,7 +539,7 @@ logmessage('Created calendar.txt')
 zf.write(os.path.join(gtfsFolder, 'calendar.txt' ), arcname='calendar.txt', compress_type=zipfile.ZIP_DEFLATED )
 
 
-# In[41]:
+# In[45]:
 
 
 stopsDF.to_csv(os.path.join(gtfsFolder,'stops.txt'),index=False)
@@ -495,7 +547,7 @@ logmessage('Created stops.txt, {} entries.'.format(len(stopsDF)))
 zf.write(os.path.join(gtfsFolder, 'stops.txt' ), arcname='stops.txt', compress_type=zipfile.ZIP_DEFLATED )
 
 
-# In[42]:
+# In[46]:
 
 
 routesDF.to_csv(os.path.join(gtfsFolder,'routes.txt'),index=False)
@@ -503,7 +555,7 @@ logmessage('Created routes.txt, {} entries.'.format(len(routesDF)))
 zf.write(os.path.join(gtfsFolder, 'routes.txt' ), arcname='routes.txt', compress_type=zipfile.ZIP_DEFLATED )
 
 
-# In[43]:
+# In[47]:
 
 
 tripsDF.to_csv(os.path.join(gtfsFolder,'trips.txt'),index=False)
@@ -511,7 +563,7 @@ logmessage('Created trips.txt, {} entries.'.format(len(tripsDF)))
 zf.write(os.path.join(gtfsFolder, 'trips.txt' ), arcname='trips.txt', compress_type=zipfile.ZIP_DEFLATED )
 
 
-# In[44]:
+# In[48]:
 
 
 if len(frequenciesDF):
@@ -522,27 +574,29 @@ else:
     logmessage('Did not create frequencies.txt as none provisioned.')
 
 
-# In[45]:
+# In[49]:
 
 
-stopTimesDF.to_csv(os.path.join(gtfsFolder,'stop_times.txt'),index=False, chunksize=10000)
-logmessage('Created stop_times.txt, {} entries.'.format(len(stopTimesDF)))
+# stopTimesDF.to_csv(os.path.join(gtfsFolder,'stop_times.txt'),index=False, chunksize=10000)
+# logmessage('Created stop_times.txt, {} entries.'.format(len(stopTimesDF)))
+# stop_times.txt already made, incrementally
+
 zf.write(os.path.join(gtfsFolder, 'stop_times.txt' ), arcname='stop_times.txt', compress_type=zipfile.ZIP_DEFLATED )
 
 
-# In[47]:
+# In[50]:
 
 
 zf.close()
 
 
-# In[48]:
+# In[51]:
 
 
 logmessage("Zipped them up into gtfs.zip")
 
 
-# In[46]:
+# In[52]:
 
 
 t5 = time.time()
@@ -550,7 +604,7 @@ logmessage("writing out all GTFS files took {} seconds.".format(round(t5-t4,2)))
 logmessage("The whole GTFS creation script took {} seconds.".format(round(t5-t1,2)))
 
 
-# In[49]:
+# In[53]:
 
 
 # one more backup command : for the validation results html that will be generated right after this script is run
