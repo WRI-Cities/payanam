@@ -32,9 +32,9 @@ services:
     restart: unless-stopped
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
     depends_on:
-      - ci-app
+      - payanam
     networks:
-      - ci-net
+      - intranet
   
   certbot:
     image: certbot/certbot
@@ -44,9 +44,9 @@ services:
     restart: unless-stopped
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
     depends_on:
-      - ci-app
+      - payanam
     networks:
-      - ci-net
+      - intranet
       
 networks:
   intranet:
