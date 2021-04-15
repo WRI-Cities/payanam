@@ -1,6 +1,7 @@
 routes
 locked-routes
 reports
+!reports/gtfs_validation_report.html
 logs
 gtfs
 
