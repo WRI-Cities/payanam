@@ -10,3 +10,4 @@ __pycache__
 routes-temp
 shelved
 datacleaning
+.venv
