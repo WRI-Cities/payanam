@@ -1,6 +1,6 @@
 routes
 locked-routes
-reports
+reports/*
 !reports/gtfs_validation_report.html
 logs
 gtfs
