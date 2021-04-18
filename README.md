@@ -10,6 +10,7 @@ Created by a joint collaboration between [World Resources Institute](https://www
 Lead programmer: [Nikhil VJ](https://github.com/answerquest) from Pune, India
 
 Initially deployed on https://server.nikhilvj.co.in/payanam/
+Currently deployed on https://payanam.factly.in
 
 ----
 
@@ -44,6 +45,66 @@ Initially deployed on https://server.nikhilvj.co.in/payanam/
 - - Use absolute paths in all things cron.
 - - You can redirect the stdout and stderr outputs to other log files or to `/dev/null` (aka the black hole); these files are logging everything to `reports/logs/log.txt` anyways.
 - - This website will help you figure out your cron: https://crontab.guru
+
+----
+
+## Running Payanam using Docker
+
+Docker is the quickeet way to run Payanam if you want to run it locally to explore.
+
+#### Pre-requisites
+
+- Install [Docker](https://docs.docker.com/engine/install/)
+- Install [Docker Compose](https://docs.docker.com/compose/install/)
+
+#### Running the application
+
+- Make sure Docker is running and execute the following command to run the application
+  
+  ```
+  docker-compose -f docker-compose-dev.yaml up
+  ```
+----
+
+## Production Installation for Payanam
+
+Following set-up is a quick installation for Counting India in production which includes [Nginx proxy ](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/) and a [free Let'sEncrypt SSL](https://letsencrypt.org/) certificate using [Certbot](https://certbot.eff.org/). The steps also includes automatic renewal of the certificates!!
+
+#### Pre-requisites
+
+- A Linux server with DNS mapped to the server IP address
+- Install [Docker](https://docs.docker.com/engine/install/)
+- Install [Docker Compose](https://docs.docker.com/compose/install/)
+
+#### Setting up for Nginx and Certbot
+
+- Clone the repository and make sure Docker is running
+
+- Change the values in the `nginx/default.conf ` from payanam.factly.in to your domain name
+
+- Change the `domains` in `init-letsencrypt.sh` from payanam.factly.in to your domain names
+
+- Setup nginx and certbot by executing the following command
+  
+  ```
+  sudo ./init-letsencrypt.sh
+  ```
+  
+  If the DNS mappings are correct and the prior steps are followed correctly, the above script issues a temporary certificate to start nginx and then issues the original certificates for your domain name after nginx is started.
+
+- Bring down the entire application after the certificates are issued as expected using the following command
+  
+  ```
+  docker-compose down
+  ```
+
+#### Running the application
+
+- Make sure Docker is running and execute the following command to run the application
+  
+  ```
+  docker-compose up
+  ```
 
 ----
 
