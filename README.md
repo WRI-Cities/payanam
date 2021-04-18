@@ -50,7 +50,7 @@ Currently deployed on https://payanam.factly.in
 
 ## Running Payanam using Docker
 
-Docker is the quickeet way to run Payanam if you want to run it locally to explore.
+Docker is the quickest way to run Payanam if you want to run it locally to explore.
 
 #### Pre-requisites
 
