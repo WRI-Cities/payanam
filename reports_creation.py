@@ -561,7 +561,10 @@ for dateH in statsDict['history'].keys():
         row.pop('averages',None) # get rid of averages dict and directly add its keys
         row.update(statsDict['history'][dateH]['averages'])
     statsCollector.append(row.copy())
-statsDF = pd.DataFrame(statsCollector).sort_values('dateH').reset_index(drop=True)
+if len(statsCollector):
+    statsDF = pd.DataFrame(statsCollector).sort_values('dateH').reset_index(drop=True)
+else:
+    statsDF = pd.DataFrame(statsCollector)
 statsDF.to_csv(os.path.join(reportsFolder,'stats.csv'), index=False)
 logmessage('Created stats.csv')
 

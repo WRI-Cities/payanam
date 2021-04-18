@@ -1,6 +1,7 @@
 routes
 locked-routes
-reports
+reports/*
+!reports/gtfs_validation_report.html
 logs
 gtfs
 
@@ -10,3 +11,4 @@ __pycache__
 routes-temp
 shelved
 datacleaning
+.venv
