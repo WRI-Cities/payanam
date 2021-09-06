@@ -10,6 +10,10 @@
 # Timings : take the timings if they exist, else take default timings defined in config/config.json
 # 
 # v5 : Let's do incremental route-wise saving of stop_times.txt instead of accumulating for each route. AppendOrCreate.
+# 
+# v6 : Fixed frequencies part : skips if freq value is '0'
+# 
+# v7 : fixing an erroring .sample(10) command when there aren't that many stops
 
 # In[1]:
 
@@ -34,7 +38,8 @@ t1 = time.time()
 
 
 DEV = False
-DEVLimit = 20
+DEVStart = 88
+DEVLimit = 3
 
 
 # In[4]:
@@ -105,7 +110,7 @@ default_trip_times
 
 def logmessage( *content ):
     global logFolder
-    timestamp = '{:%Y-%b-%d %H:%M:%S} :'.format(datetime.datetime.now())
+    timestamp = '{:%Y-%b-%d %H:%M:%S} :'.format(datetime.datetime.utcnow() + datetime.timedelta(hours=5.5))
     # from https://stackoverflow.com/a/26455617/4355695
     line = ' '.join(str(x) for x in list(content))
     # str(x) for x in list(content) : handles numbers in the list, converts them to string before concatenating. 
@@ -124,7 +129,7 @@ def logmessage( *content ):
 def backup(filepath):
     global backupsFolder
     # make timestamp for backup string
-    backupSuffix = '_{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now())
+    backupSuffix = '_{:%Y%m%d-%H%M%S}'.format(datetime.datetime.utcnow() + datetime.timedelta(hours=5.5))
     destinationPath = os.path.join(backupsFolder, filepath.replace(root+'/','') + backupSuffix)
 
     # copy folder paths
@@ -180,7 +185,7 @@ routes_src.head()
 
 # DEVine intervention
 if DEV:
-    routes_src = routes_src.iloc[655:655+DEVLimit]
+    routes_src = routes_src.iloc[DEVStart:DEVStart+DEVLimit]
 
 
 # In[16]:
@@ -300,7 +305,8 @@ for N in range(len(stops_uniqueDF) ) :
 # In[29]:
 
 
-stops_uniqueDF.sample(10)
+# if len(stops_uniqueDF) >= 10:
+#     stops_uniqueDF.sample(10)
 
 
 # In[30]:
@@ -366,8 +372,11 @@ for rN, routeRow in routes_src.iterrows():
             # later: here we have to lookup frequency and and if even that's not available, then assume default trip times.
             # changed the way frequency is stored to only-seconds, and t{}.frequency instead of hr,min,sec
             
-            if routeRow['t{}.frequency'.format(direction_id)].isdigit():
+            freqVal = routeRow['t{}.frequency'.format(direction_id)]
+            
+            if freqVal.isdigit() and freqVal != '0':
                 # if there's a frequency, then stop_times has only one set of entries and timings are just for giving offset, so advised to start the trip at 00:00:00 hrs
+                print(route_id,direction_id,': frequency:',freqVal)
                 this_trip_times = ['00:00:00'] # remember to keep it in hh:mm:ss format if hard-coding!
                 start_time = gtfsC.timeFormat(routeRow['t{}.first_trip_start'.format(direction_id)])
                 end_time = gtfsC.timeFormat(routeRow['t{}.last_trip_start'.format(direction_id)])

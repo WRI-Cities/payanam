@@ -3,10 +3,8 @@ locked-routes
 reports
 logs
 gtfs
+uploads
+config/access.csv
 
-
-routes-backup-30.7.19
 __pycache__
-routes-temp
-shelved
 datacleaning

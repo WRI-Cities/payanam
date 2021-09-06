@@ -32,7 +32,7 @@ for folder in [routesFolder, lockFolder, logFolder, reportsFolder, shapesFolder]
 
 
 def logmessage( *content ):
-    timestamp = '{:%Y-%b-%d %H:%M:%S} :'.format(datetime.datetime.now())
+    timestamp = '{:%Y-%b-%d %H:%M:%S} :'.format(datetime.datetime.utcnow() + datetime.timedelta(hours=5.5))
     # from https://stackoverflow.com/a/26455617/4355695
     line = ' '.join(str(x) for x in list(content))
     # str(x) for x in list(content) : handles numbers in the list, converts them to string before concatenating. 
@@ -131,6 +131,8 @@ def churnJsons(foldername):
                 routeRow['t{}.first_trip_start'.format(direction_id)] = timeDict.get('first_trip_start','')
                 routeRow['t{}.last_trip_start'.format(direction_id)] = timeDict.get('last_trip_start','')
                 routeRow['t{}.frequency'.format(direction_id)] = str(timeDict.get('frequency',''))
+                # 4.10.19 intervention: if frequency is just zero, blank it
+                if routeRow['t{}.frequency'.format(direction_id)]=='0': routeRow['t{}.frequency'.format(direction_id)]=''
                 routeRow['t{}.duration'.format(direction_id)] = str(timeDict.get('duration',''))
 
                 # stops:
@@ -179,7 +181,7 @@ def churnJsons(foldername):
                     # So if the hull variable is <= 3 points, it means there's only 2 points net, that makes a line, not a polygon.
                     routeRow['hull'] = round( Polygon(hull).area * 10000 ,2)
             else:
-                routeRow['hull'] = pd.np.NaN
+                routeRow['hull'] = np.NaN
             
             # 27.6.19 Service numbers
             routeRow['service'] = ','.join(data.get('serviceNumbers',[]))
@@ -269,8 +271,8 @@ logmessage('Created stops_all_unique.csv, {} entries.'.format( len(uniqueDF) )) 
 
 #### 
 # manually mapped stops
-mappedDF = df[ ( ~df['stop_lat'].isin([pd.np.NaN,'']) ) & ( ~df['confidence'].isin(['0',0])) ].copy().reset_index(drop=True)
-# note: pd.np.NaN may not be needed if we have guaranteed it's either float-in-str or nothing
+mappedDF = df[ ( ~df['stop_lat'].isin([np.NaN,'']) ) & ( ~df['confidence'].isin(['0',0])) ].copy().reset_index(drop=True)
+# note: np.NaN may not be needed if we have guaranteed it's either float-in-str or nothing
 mappedDF.to_csv(os.path.join(reportsFolder,'stops_mapped.csv'), index_label='sr', columns=stopCols )
 logmessage('Manually mapped stops:')
 logmessage('Created stops_mapped.csv (including all reconciled stops), {} entries.'.format( len(mappedDF) ))
@@ -320,9 +322,9 @@ def groupUniqueMapped(x):
         try:
             hullArea = round( Polygon( np.array( convex_hull( np.array(locations) ) ) ).area * 10000 ,2)
         except:
-            hullArea = pd.np.NaN
+            hullArea = np.NaN
         '''
-    else: hullArea = pd.np.NaN
+    else: hullArea = np.NaN
     
     # confidence:
     x['confidence'] = x['confidence'].apply( lambda x: float(x) if x else 0) # now this is safe because confidende column go stripped off of all non-integer chars earlier
@@ -364,7 +366,7 @@ statsCollector['stops_mapped_unique'] = len(uniqueMappedDF)
 ######
 # unmapped stops
 logmessage('Unmapped stops:')
-unmappedDF = df[ df['stop_lat'].isin([pd.np.NaN,'']) ].copy().reset_index(drop=True)
+unmappedDF = df[ df['stop_lat'].isin([np.NaN,'']) ].copy().reset_index(drop=True)
 unmappedDF.to_csv(os.path.join(reportsFolder,'stops_unmapped.csv'), index_label='sr', columns=stopCols)
 logmessage('Created stops_unmapped.csv, {} entries.'.format( len(unmappedDF) ))
 statsCollector['stops_unmapped'] = len(unmappedDF)
@@ -392,7 +394,7 @@ statsCollector['stops_unmapped_unique'] = len(unmappedUniqueDF)
 ######
 # auto mapped stops
 logmessage('Automapped stops:')
-autoDF = df[ ( ~df['stop_lat'].isin([pd.np.NaN,'']) ) & ( df['confidence'].isin(['0',0])) ].copy().reset_index(drop=True)
+autoDF = df[ ( ~df['stop_lat'].isin([np.NaN,'']) ) & ( df['confidence'].isin(['0',0])) ].copy().reset_index(drop=True)
 autoDF.to_csv(os.path.join(reportsFolder,'stops_automapped.csv'), index_label='sr', columns=stopCols )
 logmessage('Created stops_automapped.csv, {} entries.'.format( len(autoDF) ))
 statsCollector['stops_automapped'] = len(autoDF)
@@ -457,8 +459,8 @@ for n,routeRow in routesDF.iterrows():
     dir0df = x[x['direction_id']=='0']
     dir1df = x[x['direction_id']=='1']
     
-    dir0dfMapped = dir0df[~dir0df.stop_lat.isin([pd.np.NaN,'',0])].copy().reset_index(drop=True)
-    dir1dfMapped = dir1df[~dir1df.stop_lat.isin([pd.np.NaN,'',0])].copy().reset_index(drop=True)
+    dir0dfMapped = dir0df[~dir0df.stop_lat.isin([np.NaN,'',0])].copy().reset_index(drop=True)
+    dir1dfMapped = dir1df[~dir1df.stop_lat.isin([np.NaN,'',0])].copy().reset_index(drop=True)
 
     dir0dfMapped['confidence'] = dir0dfMapped['confidence'].apply( lambda x: float(x) if x else 0)
     dir1dfMapped['confidence'] = dir1dfMapped['confidence'].apply( lambda x: float(x) if x else 0)
@@ -573,7 +575,7 @@ logmessage("Stats work took {} seconds.".format(round(times[-1]-times[-2],2)))
 # 6.4.19 : Generate shapefiles, one per depot/folder
 
 # filter all stops df to have mapped stops - both 
-locDF = df[ ~df['stop_lat'].isin([pd.np.NaN,'']) ].copy().reset_index(drop=True)
+locDF = df[ ~df['stop_lat'].isin([np.NaN,'']) ].copy().reset_index(drop=True)
 logmessage("Generating shapefiles, one per depot/folder. Total mapped (manual+auto) stops: {}".format(len(locDF)))
 
 # make the lat, lon columns numeric
@@ -631,7 +633,7 @@ logmessage("{}: Full reports creation script took {} seconds.".format(hourStamp,
 
 def backup(filepath):
     # make timestamp for backup string
-    backupSuffix = '_{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now())
+    backupSuffix = '_{:%Y%m%d-%H%M%S}'.format(datetime.datetime.utcnow() + datetime.timedelta(hours=5.5))
     destinationPath = os.path.join(backupsFolder, filepath[len(root)+1:] + backupSuffix)
 
     # copy folder paths

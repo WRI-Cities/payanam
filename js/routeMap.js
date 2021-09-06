@@ -103,7 +103,7 @@ var routeTable = new Tabulator("#routeTable", {
 				}
 			}
 		},
-		//{title:"offset", field:"offset", headerFilter:"input", editor:"input", headerTooltip:"arrival time, in mins after first stop", headerSort:false },
+		{title:"offset", field:"offset", headerFilter:"input", editor:"input", headerTooltip:"arrival time, in mins after first stop", headerSort:false },
 		{title:"stop_desc", field:"stop_desc", editor:"input", headerFilter:"input", width:100, headerSort:false },
 		
 		{formatter:"buttonCross", align:"center", title:"del", width:20, headerSort:false, headerTooltip:"delete a stop", cellClick:function(e, cell){
@@ -322,6 +322,7 @@ L.easyButton('<img src="lib/zoom-out.svg" width="100%" title="zoom to see all st
 
 L.easyButton('<img src="lib/route.svg" width="100%" title="toggle route lines" data-toggle="tooltip" data-placement="right">', function(btn, map){
 	routeLines();
+	;
 }).addTo(map);
 
 // https://github.com/Leaflet/Leaflet.fullscreen
@@ -480,26 +481,26 @@ function loadRoutesCSV() {
     var filename = 'reports/routes.csv';
     console.log('Loading',filename);
     Papa.parse(`${filename}?_=${(new Date).getTime()}`, {
-    download: true,
-    header: true,
-        skipEmptyLines: true,
-        dynamicTyping: false, // this reads numbers as numerical; set false to read everything as string
-        complete: function(results, file) {
-            var returnHTML = '<option value="">Select one</option>';
-            var depotsList = [];
-            results.data.forEach(r => {
-                if(!depotsList.includes(r.folder)) {
-                    returnHTML += `<optgroup label="${r.folder}">`;
-                    depotsList.push(r.folder);
-                }
-                returnHTML += `<option value="${r.folder}/${r.jsonFile}">${r.routeName}</option>`;
-            });
-            
-            //console.log(returnHTML);
-            $('#routeSelect').html(returnHTML);
-            $('#routeSelect').trigger('chosen:updated'); 
-            $('#routeSelect').chosen({disable_search_threshold: 1, search_contains:true, width:200, placeholder_text_single:'Pick a route'});
-        }
+		download: true,
+		header: true,
+		skipEmptyLines: true,
+		dynamicTyping: false, // this reads numbers as numerical; set false to read everything as string
+		complete: function(results, file) {
+			var returnHTML = '<option value="">Select one</option>';
+			var depotsList = [];
+			results.data.forEach(r => {
+				if(!depotsList.includes(r.folder)) {
+					returnHTML += `<optgroup label="${r.folder}">`;
+					depotsList.push(r.folder);
+				}
+				returnHTML += `<option value="${r.folder}/${r.jsonFile}">${r.routeName}</option>`;
+			});
+			
+			//console.log(returnHTML);
+			$('#routeSelect').html(returnHTML);
+			$('#routeSelect').trigger('chosen:updated'); 
+			$('#routeSelect').chosen({disable_search_threshold: 1, search_contains:true, width:200, placeholder_text_single:'Pick a route'});
+		}
     });
 }
 
@@ -1149,7 +1150,7 @@ function listChanges(changesJson) {
 	changesJson.forEach(element => {
 		returnHTML += `${element.timestamp}: ${element.email}, ${element.function}<br>`;
 	});
-	console.log(returnHTML);
+	// console.log(returnHTML);
 	return returnHTML;
 }
 
