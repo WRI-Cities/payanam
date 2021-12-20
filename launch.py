@@ -15,15 +15,20 @@ import shutil # for copying etc
 import time, datetime
 from collections import OrderedDict
 from math import sin, cos, sqrt, atan2, radians
+import zipfile, zlib
+import uuid
 
 import pandas as pd
 import tornado.ioloop, tornado.web
+from tornado import escape
 
 # for fuzzy search
 import jellyfish as jf
 
 import requests, platform # used to log user stats
 requests.packages.urllib3.disable_warnings() # suppress warning messages like "InsecureRequestWarning: Unverified HTTPS request is being made." from https://stackoverflow.com/a/44850849/4355695
+
+import gtfs_common as gtfsC
 
 # setting constants
 root = os.path.dirname(__file__) # needed for tornado and all other paths, prog should work even if called from other working directory.
@@ -37,6 +42,7 @@ configFolder = os.path.join(root,'config')
 reportsFolder = os.path.join(root,'reports')
 databankFolder = os.path.join(root,'databank')
 backupsFolder = os.path.join(root,'backups')
+uploadFolder = os.path.join(root,'uploads')
 
 configFile = 'config.json'
 accessFile = 'access.csv'
@@ -54,7 +60,7 @@ except FileNotFoundError:
     configRules = {}
 
 # create folders if they don't exist
-for folder in [routesFolder, lockFolder, logFolder, configFolder, reportsFolder, databankFolder, backupsFolder]:
+for folder in [routesFolder, lockFolder, logFolder, configFolder, reportsFolder, databankFolder, backupsFolder, uploadFolder]:
     os.makedirs(folder, exist_ok=True)
 
 exec(open(os.path.join(root,"functions.py"), encoding='utf8').read())
@@ -79,6 +85,7 @@ def make_app():
         (r"/API/timings", timings),
         (r"/API/unLock", unLock),
         (r"/API/depotsList", depotsList),
+        (r"/API/importGTFS", importGTFS),
         #(r"/API/allStops", allStops),
         # (r"/(.*)", tornado.web.StaticFileHandler, {"path": root, "default_filename": startPage})
         (r"/(.*)", MyStaticFileHandler, {"path": root, "default_filename": startPage})
@@ -107,6 +114,10 @@ if __name__ == "__main__":
                 sys.exit()
 
     thisURL = "http://localhost:" + str(port)
-    webbrowser.open(thisURL)
-    logmessage("\n\nOpen {} in your Web Browser if you don't see it opening automatically in 5 seconds.\n\nNote: If this is through docker, then it's not going to auto-open in browser, don't wait.".format(thisURL))
+    if configRules.get('openBrowser') : 
+        webbrowser.open(thisURL)
+        logmessage("\n\nOpen {} in your Web Browser if you don't see it opening automatically in 5 seconds.\n\nNote: If this is through docker, then it's not going to auto-open in browser, don't wait.".format(thisURL))
+    else:
+        logmessage(f"\n\nOpen {thisURL} in your Web Browser")
+    
     tornado.ioloop.IOLoop.current().start()

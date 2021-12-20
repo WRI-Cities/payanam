@@ -139,7 +139,15 @@ div.sidebar-tabs {
 <h1 class="sidebar-header">About<span class="sidebar-close"><i class="fa fa-caret-left"></i></span></h1>
 <br>
 <p>Each dot on the map represents a stop by unique lat-long location.<br>
-The size of the bus stop's dot is representative of the number of routes served by this stop.
+Use the table in the main tab of this pane (click burger icon on top left) to search and filter down to a stop you're looking for. To see all stops again, erase the filter and press Enter.
+</p>
+<h4>Size Explanation</h4>
+<p>
+The size of the bus stop's dot is representative of the number of routes served by this stop.</p>
+<p>Formula used: <br>
+Radius = 3 + 1.5 * Log(<i>Number of routes</i>)<br><br>
+<small>Since routes number varies widely from 1 to 100s, a log scale was used to prevent the heavies from occupying the whole screen. Therefore, 5 and 10 shows more difference than 100 and 200.</small>
+
 </p>
 
 </div>

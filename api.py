@@ -13,10 +13,12 @@ class APIHandler(tornado.web.RequestHandler):
         self.write(json.dumps(welcomeString))
 
     def post(self):
-        user = self.get_argument("username")
-        passwd = self.get_argument("password")
+        payload = escape.json_decode(self.request.body) # in case of json payload
+        print(payload)
+        # or, if there is an uploaded file
+        gpx_string = self.request.files['gpx'][0]['body']
         time.sleep(10)
-        self.write("Your username is %s and password is %s" % (user, passwd))
+        self.write("Payload received")
 '''
 
 class loadJsonsList(tornado.web.RequestHandler):
@@ -414,7 +416,19 @@ class depotsList(tornado.web.RequestHandler):
         logUse('depotsList')
 
 
+class importGTFS(tornado.web.RequestHandler):
+    def post(self):
+        logmessage("importGTFS POST api call")
+        key = self.get_argument('key',default='')
+        if not checkAccess(key,'ADMIN'):
+            self.set_status(400)
+            self.write("Error: Need Admin level API Key.")
+            return
 
+        zipfilename = uploadaFile(self.request.files['upload'][0])
+        logmessage(f"GTFS zip uploaded to {zipfilename}")
+        returnContent = processGTFS(zipfilename)
+        self.write(returnContent)
 
 #################################
 
