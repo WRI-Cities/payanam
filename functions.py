@@ -1,5 +1,5 @@
 def logmessage( *content ):
-    timestamp = '{:%Y-%b-%d %H:%M:%S} :'.format(datetime.datetime.now())
+    timestamp = '{:%Y-%b-%d %H:%M:%S} :'.format(datetime.datetime.utcnow() + datetime.timedelta(hours=5.5))
     # from https://stackoverflow.com/a/26455617/4355695
     line = ' '.join(str(x) for x in list(content))
     # str(x) for x in list(content) : handles numbers in the list, converts them to string before concatenating. 
@@ -88,7 +88,7 @@ def saveRoute(filename,data=[], key=False):
 
     if key:
         info = userInfo(key)
-        timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.now())
+        timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.utcnow() + datetime.timedelta(hours=5.5))
         saveRecord = OrderedDict()
         saveRecord['timestamp'] = timestamp
         saveRecord['email'] = info.get('email','')
@@ -207,7 +207,7 @@ def routeSuggestFunc(filename, dfMapped=[], dfDataBank=[], mapFirst=False, sugge
     
     if key:
         info = userInfo(key)
-        timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.now())
+        timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.utcnow() + datetime.timedelta(hours=5.5))
         saveRecord = OrderedDict()
         saveRecord['timestamp'] = timestamp
         saveRecord['email'] = info.get('email','')
@@ -237,7 +237,7 @@ def routeLockFunc(filename, key):
     routeD = json.load(open(os.path.join(routesFolder,filename)), object_pairs_hook=OrderedDict)
     if key:
         info = userInfo(key)
-        timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.now())
+        timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.utcnow() + datetime.timedelta(hours=5.5))
         saveRecord = OrderedDict()
         saveRecord['timestamp'] = timestamp
         saveRecord['email'] = info.get('email','')
@@ -293,8 +293,8 @@ def lat_long_dist(lat1,lon1,lat2,lon2):
 
 def backup(filepath):
     # make timestamp for backup string
-    backupSuffix = '_{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now())
-    destinationPath = os.path.join(backupsFolder, filepath[len(root)+1:] + backupSuffix)
+    backupSuffix = '_{:%Y%m%d-%H%M%S}'.format(datetime.datetime.utcnow() + datetime.timedelta(hours=5.5))
+    destinationPath = os.path.join(backupsFolder, filepath[len(root):] + backupSuffix)
 
     # copy folder paths
     try:
@@ -617,7 +617,7 @@ def sanityFunc(filename,key=None,dryRun=True):
     if not dryRun and key:
         if changesCount or removedCount :
             info = userInfo(key)
-            timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.now())
+            timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.utcnow() + datetime.timedelta(hours=5.5))
             saveRecord = OrderedDict()
             saveRecord['timestamp'] = timestamp
             saveRecord['email'] = info.get('email','')
@@ -745,7 +745,7 @@ def saveDataEntryRoute(filename,data={}, key=False):
     # ''' # uncomment when ready
     if changesMade and key:
         info = userInfo(key)
-        timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.now())
+        timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.utcnow() + datetime.timedelta(hours=5.5))
         saveRecord = OrderedDict()
         saveRecord['timestamp'] = timestamp
         saveRecord['email'] = info.get('email','')
@@ -788,7 +788,7 @@ def changeStop(key,folder,jsonFile,direction_id,searchName,\
     
     if changesCount and key:
         info = userInfo(key)
-        timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.now())
+        timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.utcnow() + datetime.timedelta(hours=5.5))
         saveRecord = OrderedDict()
         saveRecord['timestamp'] = timestamp
         saveRecord['email'] = info.get('email','')
@@ -857,7 +857,7 @@ def removeAutoMapping(key,really=False, deSuggest=False):
         
         if key and really:
             info = userInfo(key)
-            timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.now())
+            timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.utcnow() + datetime.timedelta(hours=5.5))
             saveRecord = OrderedDict()
             saveRecord['timestamp'] = timestamp
             saveRecord['email'] = info.get('email','')
@@ -897,7 +897,7 @@ def storeTimings(filename,data,key):
     
     if key:
         info = userInfo(key)
-        timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.now())
+        timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.utcnow() + datetime.timedelta(hours=5.5))
         saveRecord = OrderedDict()
         saveRecord['timestamp'] = timestamp
         saveRecord['email'] = info.get('email','')
@@ -921,7 +921,7 @@ def unLockFunc(filename,key):
     routeD = json.load(open(os.path.join(lockFolder,filename)), object_pairs_hook=OrderedDict)
     if key:
         info = userInfo(key)
-        timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.now())
+        timestamp = '{:%Y.%m.%d - %H:%M:%S}'.format(datetime.datetime.utcnow() + datetime.timedelta(hours=5.5))
         saveRecord = OrderedDict()
         saveRecord['timestamp'] = timestamp
         saveRecord['email'] = info.get('email','')
@@ -965,8 +965,9 @@ def logUse(action='launch',type='visitor'):
     cvar['2'] = ['OS', platform.system()]
     cvar['3'] = ['processor',platform.processor()]
     if cvar['2'][1] == 'Linux':
-        cvar['2'][1] = platform.linux_distribution()[0]
-        cvar['4'] = ['version', platform.linux_distribution()[1] ]
+        # cvar['2'][1] = platform.linux_distribution()[0]
+        # cvar['4'] = ['version', platform.linux_distribution()[1] ]
+        pass
     else:
         cvar['4'] = ['version', platform.release() ]
     payload['_cvar'] = json.dumps(cvar)
@@ -990,6 +991,192 @@ def depotsListFunc():
     
     return content
 
+
+def makeUID(nobreaks=False):
+    if nobreaks:
+        return uuid.uuid4().hex
+    else:
+        return str(uuid.uuid4())
+
+# handle file upload
+def uploadaFile(fileholder):
+    # adapted from https://techoverflow.net/2015/06/09/upload-multiple-files-to-the-tornado-webserver/
+    # receiving a form file object as argument.
+    filename = makeUID()
+    full_filename = os.path.join(uploadFolder,filename)
+    with open(full_filename, "wb") as out:
+        # Be aware, that the user may have uploaded something evil like an executable script ...
+        # so it is a good idea to check the file content (xfile['body']) before saving the file
+        out.write(fileholder['body'])
+    return full_filename
+
+
+def processGTFS(zipname):
+    start = time.time()
+    rtn = ''
+    unzipFolder = os.path.join(uploadFolder,f"unzip-{makeUID()}")
+    os.makedirs(unzipFolder, exist_ok=True)
+    # UNZIP a zip file, from https://stackoverflow.com/a/36662770/4355695
+    with zipfile.ZipFile(zipname,"r") as zf:
+        zf.extractall(unzipFolder)
+    filenames = [f for f in os.listdir(unzipFolder) if f.lower().endswith('.txt') and os.path.isfile(os.path.join(unzipFolder, f))]
+    logmessage("files in zip:",filenames)
+    rtn += f"files: {', '.join(filenames)}"
+
+    routedf = pd.read_csv(os.path.join(unzipFolder, 'routes.txt'), sep=',', dtype=str)
+    stopdf = pd.read_csv(os.path.join(unzipFolder, 'stops.txt'), sep=',', dtype=str)
+    tripdf = pd.read_csv(os.path.join(unzipFolder, 'trips.txt'), sep=',', dtype=str)
+    stoptimesdf = pd.read_csv(os.path.join(unzipFolder, 'stop_times.txt'), sep=',', dtype=str)
+
+    # print("routedf:",routedf.columns.tolist())
+    # print("stopdf:",stopdf.columns.tolist())
+    # print("tripdf:",tripdf.columns.tolist())
+    # print("stoptimesdf:",stoptimesdf.columns.tolist())
+
+    # make stops lookup
+    stopsLookup = {}
+    for N,s in stopdf.iterrows():
+        stopsLookup[s['stop_id']] = s['stop_name']
+
+    
+    # create get all the depots and make their folders
+    depots = set()
+    routedf['route_long_name'].apply(lambda x: depots.add(x.split('_')[0]))
+    # make depot folders
+    for d in depots:
+        os.makedirs(os.path.join(routesFolder,d), exist_ok=True)
+
+    routeNameSet = set() # for ensuring that same route name isn't repeated
+
+    overwritten = 0
+
+    # starting main loop
+    for rN, r in routedf.iterrows():
+        msg = f"Route: {r['route_short_name']}, {r['route_long_name']}"
+        # logmessage(msg)
+        rtn += "\n"+msg
+        # make the json structure
+        routeD = {
+            "routeFileName": "",
+            "routeName": "",
+            "depot": "",
+            "stopsArray0": [],
+            "stopsArray1": [],
+            "timeStructure_0": {
+                "trip_times": [],
+                "first_trip_start": "",
+                "last_trip_start": "",
+                "frequency": 0,
+                "duration": "",
+                "bus_type": []
+            },
+            "timeStructure_1": {
+                "trip_times": [],
+                "first_trip_start": "",
+                "last_trip_start": "",
+                "frequency": 0,
+                "duration": "",
+                "bus_type": []
+            },
+            "serviceNumbers": []
+        }
+        
+        routeD['depot'] = r['route_long_name'].split('_')[0]
+        routeName = '_'.join(r['route_long_name'].split('_')[1:])
+        routeD['routeName'] = routeName
+        routeD['routeFileName'] = f"{routeName}.json"
+
+        if r['route_long_name'] in routeNameSet:
+            msg = f"Warning! Repeated route: {r['route_long_name']}"
+            # logmessage(msg)
+            rtn += "\n"+msg
+        else:
+            routeNameSet.add(r['route_long_name'])
+
+        # take all trips for this route
+        alltrips = tripdf[tripdf['route_id'] == r['route_id']].copy().reset_index(drop=True)
+        if not len(alltrips):
+            msg = f"Warning: {r['route_long_name']} route_id {r['route_id']} does not have any trips"
+            logmessage(msg)
+            rtn += "\n"+msg
+            continue
+
+        # take block_id as service numbers
+        if 'block_id' in alltrips.columns:
+            routeD['serviceNumbers'] = alltrips['block_id'].unique().tolist()
+        
+        # include bus_type if available
+        if 'bus_type' in alltrips.columns:
+            routeD['timeStructure_0']['bus_type'] = alltrips['bus_type'].tolist()
+
+        # take first trip
+        tripidsList = alltrips['trip_id'].tolist()
+        trip_id = tripidsList[0]
+        
+        # stop times for that trip
+        st1 = stoptimesdf[stoptimesdf['trip_id']==trip_id].copy().reset_index(drop=True)
+        
+        msg = f"{len(alltrips)} trips, taking trip_id: {trip_id} for default sequence, {len(st1)} stops"
+        # logmessage(msg)
+        rtn += "\n"+msg
+        
+        timings = st1['arrival_time'].tolist()
+        durationSecs = gtfsC.timeDiff(timings[0], timings[-1], formatted=False)
+        
+        # converting to hh:mm with rounding up if secs part over 10
+        durationHrs = 0
+        durationMins = durationSecs // 60
+        if durationSecs % 60 > 10:
+            durationMins += 1
+        if durationMins > 60:
+            durationHrs = durationMins // 60
+            durationMins = durationMins % 60
+        duration = f"{str(durationHrs).rjust(2,'0')}:{str(durationMins).rjust(2,'0')}"
+        msg = f"duration: {duration} (hh:mm)"
+        # logmessage(msg)
+        rtn += "\n"+msg
+        routeD['timeStructure_0']['duration'] = duration
+        
+        # stops list
+        for sN, sR in st1.iterrows():
+            srow = { 'stop_name': stopsLookup.get(sR['stop_id'],''), "stop_sequence": int(sN+1), 
+                    "stop_id": sR['stop_id'] 
+            }
+            # find offset: diff btn two timings
+            srow['offset'] = "00:00:00"
+            if sN:
+                srow['offset'] = gtfsC.timeDiff(st1.at[sN-1,'arrival_time'],sR['arrival_time'])
+            
+            routeD["stopsArray0"].append(srow)
+            
+        
+        # get all trip starting times
+        st2 = stoptimesdf[(stoptimesdf['trip_id'].isin(tripidsList)) & (stoptimesdf['stop_sequence']=='0')].copy()
+        routeD['timeStructure_0']['trip_times'] = [x[:5] for x in st2['arrival_time'].tolist()]
+        
+        # Finally, save the route json
+        fullpath = os.path.join(routesFolder,routeD['depot'],routeD['routeFileName'])
+        # backup if already existing
+        if os.path.exists(fullpath):
+            backup(fullpath)
+            overwritten +=1
+        json.dump(routeD, open(fullpath, 'w'), indent=2)
+        msg = f"Created {routeD['routeFileName']} under {routeD['depot']} depot"
+        # logmessage(msg)
+        rtn += "\n"+msg+"\n"
+    # end of main loop
+    
+    timeTaken = round(time.time() - start,2)
+    msg = f"Imported {len(routeNameSet)} routes under {len(depots)} depots in {timeTaken} secs"
+    logmessage(msg)
+    rtn += "\n"+msg+"\n"
+    
+    if overwritten > 0 :
+        msg = f"{overwritten} previously existing route jsons backed up and overwritten"
+        logmessage(msg)
+        rtn += "\n"+msg+"\n"
+
+    return rtn
 
 
 ## GRAVEYARD
