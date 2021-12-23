@@ -17,6 +17,7 @@ services:
       - ./logs:/app/logs
       - ./gtfs:/app/gtfs
       - ./config:/app/config
+      - ./uploads:/app/uploads
     networks:
       - intranet
 
