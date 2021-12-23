@@ -15,7 +15,7 @@ def logmessage( *content ):
 zapper = lambda x: ''.join(e.lower() for e in str(x) if e.isalnum())
 
 
-def recursiveDropdown(targetFolder = '.', ext=''):
+def recursiveDropdown(targetFolder = '.', ext='', hideExt=False):
     '''
     called from loadJsonsList API call
     recursiveDropdown(targetFolder = '.', ext='')
@@ -34,7 +34,10 @@ def recursiveDropdown(targetFolder = '.', ext=''):
             content += '<optgroup label="{}">'.format(folder)
         for file in targetFiles:
             filepath = os.path.join(root,file)[len(targetFolder)+1:]
-            content += '<option value="{}">{}</option>'.format(filepath,file)
+            if hideExt:
+                content += '<option value="{}">{}</option>'.format(filepath,file.replace(ext,''))
+            else:
+                content += '<option value="{}">{}</option>'.format(filepath,file)
         if len(folder) and len(targetFiles):
             content += '</optgroup>'
     return content

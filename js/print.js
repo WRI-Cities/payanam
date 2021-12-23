@@ -160,7 +160,7 @@ $(document).ready(function() {
 //#####################################
 // API Call functions
 function loadJsonsList() {
-    $.get( `${APIpath}loadJsonsList`, function( data ) {
+    $.get( `${APIpath}loadJsonsList?hideExt=Y`, function( data ) {
         console.log('GET request loadJsonsList successful.');
         $('#jsonSelect').html(data);
         $('#jsonSelect').trigger('chosen:updated'); 

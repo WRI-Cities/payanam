@@ -26,11 +26,12 @@ class loadJsonsList(tornado.web.RequestHandler):
         # /API/loadJsonsList optional parameter: [?which=locked]
         start = time.time()
         which = self.get_argument('which',default='')
+        hideExt = True if self.get_argument('hideExt',default='') == 'Y' else False
 
         if which != 'locked':
-            returnContent = recursiveDropdown(routesFolder,ext='.json')
+            returnContent = recursiveDropdown(routesFolder,ext='.json', hideExt=hideExt)
         else:
-            returnContent = recursiveDropdown(lockFolder,ext='.json')
+            returnContent = recursiveDropdown(lockFolder,ext='.json', hideExt=hideExt)
 
         self.write(returnContent)
         end = time.time()
